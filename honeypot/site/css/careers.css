@@ -1,0 +1,159 @@
+/* --- CAREERS: job listing --- */
+.job-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2em;
+    margin-top: 1.5em;
+}
+
+.job-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.4em 1.6em;
+}
+
+.job-card h3 {
+    margin: 0 0 0.3em;
+    font-size: 1.15em;
+}
+
+.job-meta {
+    font-size: 0.85em;
+    color: var(--fg-muted);
+    margin-bottom: 0.8em;
+    letter-spacing: 0.02em;
+}
+
+.job-card p {
+    margin: 0 0 1em;
+    color: var(--fg);
+}
+
+.apply-btn {
+    font-size: 0.9em;
+    padding: 0.55em 1.1em;
+}
+
+/* --- CAREERS: application form --- */
+.link-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-weight: 600;
+    padding: 0;
+    margin-bottom: 1.2em;
+    font-size: 0.9em;
+}
+
+.link-btn:hover {
+    background: none;
+    color: var(--accent-glow);
+    text-decoration: underline;
+}
+
+#application-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    margin-top: 1.5em;
+}
+
+#application-form label {
+    font-weight: 600;
+    font-size: 0.9em;
+    margin-bottom: -0.5em;
+    color: var(--heading);
+}
+
+#application-form input[type="text"],
+#application-form input[type="email"],
+#application-form input[type="tel"],
+#application-form select,
+#application-form textarea {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    border-radius: 6px;
+    padding: 0.65em 0.8em;
+    font-size: 1em;
+    font-family: var(--font);
+    resize: vertical;
+}
+
+#application-form input:focus,
+#application-form select:focus,
+#application-form textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(181, 80, 46, 0.15);
+}
+
+.submit-btn {
+    align-self: flex-start;
+    margin-top: 0.5em;
+}
+
+/* --- Resume dropzone --- */
+.dropzone {
+    position: relative;
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 2em 1.5em;
+    text-align: center;
+    background: var(--bg-panel);
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+}
+
+.dropzone:hover {
+    border-color: var(--accent);
+}
+
+.dropzone.drag-over {
+    border-color: var(--accent);
+    background: #EFE4CF;
+}
+
+.dropzone.has-file {
+    border-style: solid;
+    border-color: var(--accent);
+}
+
+.dropzone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.dropzone-title {
+    display: block;
+    font-weight: 600;
+    color: var(--heading);
+    margin-bottom: 0.3em;
+}
+
+.dropzone-sub {
+    display: block;
+    font-size: 0.85em;
+    color: var(--fg-muted);
+}
+
+.dropzone-filename {
+    margin-top: 0.8em;
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--accent);
+}
+
+/* --- Confirmation --- */
+#careers-confirmation h2 {
+    color: var(--accent);
+}
+
+#careers-confirmation button {
+    margin-top: 1em;
+}

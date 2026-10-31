@@ -1,0 +1,5 @@
+python-dotenv>=1.0
+pyyaml>=6.0
+browser-use==0.13.1
+# Only needed for Skyvern bots (client SDK); the Skyvern server is installed separately.
+skyvern==1.0.56

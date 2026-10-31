@@ -1,0 +1,31 @@
+<head>
+    <link rel="stylesheet" href="css/sort.css" />
+</head>
+
+<div id="organize-container">
+    <div class="organize-header">
+        <h2>Sorting Board</h2>
+        <p class="organize-instructions">Drag and drop each card below into the Animals or Trees column</p>
+        <button id="edit-btn" class="edit-btn">Edit</button>
+    </div>
+
+    <div id="cards-pool" class="cards-pool">
+        <!-- Unsorted cards will appear here -->
+    </div>
+
+    <div class="columns-container">
+        <div class="column" data-column="animals" id="animals-column">
+            <h3>Animals</h3>
+            <div class="column-content" data-column="animals">
+                <!-- Cards will be dropped here -->
+            </div>
+        </div>
+
+        <div class="column" data-column="trees" id="trees-column">
+            <h3>Trees</h3>
+            <div class="column-content" data-column="trees">
+                <!-- Cards will be dropped here -->
+            </div>
+        </div>
+    </div>
+</div>

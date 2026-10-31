@@ -1,0 +1,134 @@
+/* Tile Puzzle Page Styles */
+
+#game-container {
+    padding-top: 1em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.game-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 2em;
+    gap: 0.6em;
+    max-width: 480px;
+}
+
+.game-header h2 {
+    color: var(--heading);
+    font-size: 2em;
+    margin: 0;
+}
+
+.game-instructions {
+    color: var(--fg);
+    font-size: 0.95em;
+    margin: 0;
+    opacity: 0.8;
+}
+
+.shuffle-btn {
+    background: var(--accent);
+    color: #FFFFFF;
+    padding: 0.6em 1.5em;
+    border-radius: 6px;
+    border: none;
+    font-weight: 600;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.shuffle-btn:hover {
+    background: var(--accent-glow);
+    transform: translateY(-1px);
+}
+
+.shuffle-btn:active {
+    transform: translateY(0);
+}
+
+/* Puzzle Board */
+.puzzle-board {
+    display: grid;
+    grid-template-columns: repeat(3, 100px);
+    grid-template-rows: repeat(2, 100px);
+    gap: 0.6em;
+    background: #FBF6EC;
+    border: 2px solid #EFE4CF;
+    border-radius: 12px;
+    padding: 1em;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.puzzle-board.solved {
+    border-color: #4CAF50;
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.25);
+}
+
+.tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #FBF6EC 0%, #FFFFFF 100%);
+    border: 1px solid #E2D6C1;
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    color: var(--fg);
+    font-weight: 700;
+    font-size: 1.8em;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(181, 80, 46, 0.3);
+    border-color: var(--accent);
+}
+
+.tile.empty {
+    background: transparent;
+    border: 2px dashed #E2D6C1;
+    cursor: default;
+    box-shadow: none;
+}
+
+.tile.empty:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.puzzle-board.solved .tile {
+    cursor: default;
+    border-left-color: #4CAF50;
+}
+
+.puzzle-board.solved .tile:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.game-status {
+    margin-top: 1.2em;
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #4CAF50;
+    min-height: 1.5em;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .puzzle-board {
+        grid-template-columns: repeat(3, 80px);
+        grid-template-rows: repeat(2, 80px);
+    }
+
+    .tile {
+        font-size: 1.5em;
+    }
+}

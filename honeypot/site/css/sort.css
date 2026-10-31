@@ -1,0 +1,258 @@
+/* Organize/Sorting Page Styles */
+
+#organize-container {
+    padding-top: 1em;
+}
+
+.organize-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2em;
+    flex-wrap: wrap;
+    gap: 1em;
+}
+
+.organize-header h2 {
+    color: var(--heading);
+    font-size: 2em;
+    margin: 0;
+    flex: 1;
+}
+
+.organize-instructions {
+    color: var(--fg);
+    font-size: 0.95em;
+    margin: 0;
+    flex-basis: 100%;
+    opacity: 0.8;
+}
+
+.edit-btn {
+    background: var(--accent);
+    color: #FFFFFF;
+    padding: 0.6em 1.5em;
+    border-radius: 6px;
+    border: none;
+    font-weight: 600;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.edit-btn:hover {
+    background: var(--accent-glow);
+    transform: translateY(-1px);
+}
+
+.edit-btn:active {
+    transform: translateY(0);
+}
+
+.edit-btn.saving {
+    background: #B5502E;
+}
+
+/* Cards Pool */
+.cards-pool {
+    background: #FBF6EC;
+    border: 2px dashed #E2D6C1;
+    border-radius: 12px;
+    padding: 1.5em;
+    margin-bottom: 2em;
+    min-height: 120px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1em;
+    justify-content: center;
+    align-items: center;
+    transition: border-color 0.3s, background 0.3s;
+}
+
+.cards-pool.drag-over {
+    border-color: var(--accent-glow);
+    background: #FBF6EC;
+    box-shadow: 0 0 20px rgba(217, 164, 65, 0.2);
+}
+
+.cards-pool.empty::before {
+    content: "All cards sorted! Click Save to lock in your choices.";
+    color: #8A7C68;
+    font-style: italic;
+    text-align: center;
+}
+
+/* Columns Container */
+.columns-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5em;
+    margin-bottom: 2em;
+}
+
+.column {
+    background: #FBF6EC;
+    border-radius: 12px;
+    border: 2px solid #EFE4CF;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.2s, box-shadow 0.3s, background 0.3s;
+}
+
+.column h3 {
+    background: #FBF6EC;
+    color: var(--accent-glow);
+    margin: 0;
+    padding: 1em;
+    text-align: center;
+    font-size: 1.1em;
+    border-bottom: 2px solid #EFE4CF;
+}
+
+.column:hover,
+.column.drag-over {
+    border-color: var(--accent-glow);
+    box-shadow: 0 0 20px rgba(217, 164, 65, 0.2);
+}
+
+.column.drag-over {
+    background: #FBF6EC;
+    box-shadow: 0 0 20px rgba(217, 164, 65, 0.2), inset 0 0 20px rgba(217, 164, 65, 0.08);
+}
+
+.column-content {
+    padding: 1em;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8em;
+    transition: background 0.3s;
+}
+
+/* Cards */
+.card {
+    background: linear-gradient(135deg, #FBF6EC 0%, #FFFFFF 100%);
+    border: 1px solid #E2D6C1;
+    border-radius: 8px;
+    padding: 1em 1.2em;
+    text-align: center;
+    color: var(--fg);
+    font-weight: 600;
+    font-size: 1em;
+    cursor: grab;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    user-select: none;
+    position: relative;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(181, 80, 46, 0.3);
+    border-color: var(--accent);
+}
+
+.card.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+    transform: rotate(2deg);
+}
+
+.card.locked {
+    cursor: not-allowed;
+    opacity: 0.9;
+}
+
+.card.locked:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: #E2D6C1;
+}
+
+/* In column cards get subtle glow */
+.column-content .card {
+    border-left: 3px solid var(--accent);
+}
+
+.column-content .card:hover {
+    border-left-color: var(--accent-glow);
+}
+
+.column-content .card.locked:hover {
+    border-left: 3px solid var(--accent);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .columns-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1em;
+    }
+}
+
+@media (max-width: 768px) {
+    .columns-container {
+        grid-template-columns: 1fr;
+    }
+
+    .organize-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .edit-btn {
+        align-self: flex-end;
+    }
+
+    .cards-pool {
+        padding: 1em;
+        min-height: 100px;
+    }
+
+    .column-content {
+        min-height: 150px;
+    }
+}
+
+/* Make columns equal height and fill available space */
+.columns-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5em;
+    margin-bottom: 2em;
+    min-height: 500px;
+    /* Set minimum container height */
+}
+
+.column {
+    background: #FBF6EC;
+    border-radius: 12px;
+    border: 2px solid #EFE4CF;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.2s;
+    display: flex;
+    /* Make column a flex container */
+    flex-direction: column;
+    /* Stack header and content vertically */
+}
+
+.column h3 {
+    background: #FBF6EC;
+    color: var(--accent-glow);
+    margin: 0;
+    padding: 1em;
+    text-align: center;
+    font-size: 1.1em;
+    border-bottom: 2px solid #EFE4CF;
+    flex-shrink: 0;
+    /* Prevent header from shrinking */
+}
+
+.column-content {
+    padding: 1em;
+    min-height: 200px;
+    flex: 1;
+    /* Grow to fill remaining space */
+    display: flex;
+    flex-direction: column;
+    gap: 0.8em;
+    transition: background 0.3s;
+}

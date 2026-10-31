@@ -1,0 +1,77 @@
+<section id="careers-listing" class="careers-view">
+    <h2>Careers at IC3 AI</h2>
+    <p>We're a small, growing team. Here's what we're hiring for right now.</p>
+
+    <div class="job-list">
+        <article class="job-card">
+            <h3>Customer Support Associate</h3>
+            <div class="job-meta">Remote · Full-time · $22–26/hr</div>
+            <p>Help customers with orders, returns, and account questions across chat and email. No prior support
+                experience required — we'll train you.</p>
+            <button type="button" class="apply-btn" data-role="Customer Support Associate">Apply now</button>
+        </article>
+
+        <article class="job-card">
+            <h3>Warehouse Associate</h3>
+            <div class="job-meta">Springfield, OH · Full-time · $19–21/hr</div>
+            <p>Pick, pack, and ship customer orders out of our regional fulfillment center. Morning and evening
+                shifts available.</p>
+            <button type="button" class="apply-btn" data-role="Warehouse Associate">Apply now</button>
+        </article>
+
+        <article class="job-card">
+            <h3>Junior Copywriter</h3>
+            <div class="job-meta">Remote · Part-time · $24/hr</div>
+            <p>Write product descriptions, forum announcements, and the occasional email newsletter. Portfolio
+                encouraged but not required.</p>
+            <button type="button" class="apply-btn" data-role="Junior Copywriter">Apply now</button>
+        </article>
+    </div>
+</section>
+
+<section id="careers-apply" class="careers-view" hidden>
+    <button type="button" id="apply-back-btn" class="link-btn">&larr; Back to openings</button>
+    <h2>Apply for <span id="apply-role-name">this role</span></h2>
+
+    <form id="application-form">
+        <label for="applicant-name">Full name*</label>
+        <input type="text" id="applicant-name" name="applicant-name" required />
+
+        <label for="applicant-email">Email*</label>
+        <input type="email" id="applicant-email" name="applicant-email" required />
+
+        <label for="applicant-phone">Phone</label>
+        <input type="tel" id="applicant-phone" name="applicant-phone" placeholder="(optional)" />
+
+        <label for="applicant-position">Position*</label>
+        <select id="applicant-position" name="applicant-position" required>
+            <option value="Customer Support Associate">Customer Support Associate</option>
+            <option value="Warehouse Associate">Warehouse Associate</option>
+            <option value="Junior Copywriter">Junior Copywriter</option>
+        </select>
+
+        <label for="applicant-cover-letter">Why do you want to work here?*</label>
+        <textarea id="applicant-cover-letter" name="applicant-cover-letter" rows="5" required
+            placeholder="A few sentences is plenty."></textarea>
+
+        <label for="applicant-resume">Resume*</label>
+        <div class="dropzone" id="resume-dropzone">
+            <input type="file" id="applicant-resume" name="applicant-resume"
+                accept=".pdf,.doc,.docx" required />
+            <div class="dropzone-hint">
+                <span class="dropzone-title">Drag your resume here</span>
+                <span class="dropzone-sub">or click to browse — PDF or Word, up to 5MB</span>
+            </div>
+            <div class="dropzone-filename" id="resume-filename" hidden></div>
+        </div>
+
+        <button type="submit" class="submit-btn">Submit application</button>
+    </form>
+</section>
+
+<section id="careers-confirmation" class="careers-view" hidden>
+    <h2>Application received</h2>
+    <p>Thanks, <span id="confirm-name">there</span> — we've received your application for <strong
+            id="confirm-role">the role</strong>. Our team reviews applications within 5 business days.</p>
+    <button type="button" id="confirm-back-btn">Back to Careers</button>
+</section>

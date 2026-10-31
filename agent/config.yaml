@@ -1,0 +1,62 @@
+# Agents ("bots") and tasks ("scenarios") available to agent.py and run_batch.py.
+#
+# Browser Use bots talk to any OpenAI-compatible chat endpoint. Skyvern bots
+# submit tasks to a self-hosted Skyvern server; the Skyvern server is bound to
+# its LLM through its own .env, so one server instance serves one model.
+# api_key_env names the environment variable that holds the key (see .env.example).
+
+bots:
+  # Browser Use + an OpenAI-compatible endpoint (OpenAI, vLLM, Ollama, a gateway, ...)
+  openai_gpt:
+    model: gpt-4.1
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    vision: false
+
+  local_llm:
+    model: qwen3:14b
+    base_url: http://localhost:11434/v1
+    api_key_env: LOCAL_API_KEY
+    vision: false
+
+  # Skyvern (self-hosted). Set skyvern_docker: true if the Skyvern server runs
+  # in Docker and must reach the honeypot through host.docker.internal.
+  skyvern_local:
+    engine: skyvern
+    api_url: http://127.0.0.1:8000
+    api_key_env: SKYVERN_API_KEY
+    skyvern_docker: false
+
+  # Optional per bot: a specific Chromium build for Browser Use.
+  #   executable_path: "/path/to/chrome"
+
+scenarios:
+  # path is appended to http://<honeypot>/<VERSION>; {start_url} in the prompt
+  # file is replaced by the full URL. upload_files are passed to Browser Use as
+  # available_file_paths (paths relative to agent/).
+  forums:
+    path: /forums
+    prompt_file: prompts/forums.txt
+
+  flight_booking:
+    path: /flights
+    prompt_file: prompts/flight_booking.txt
+
+  shopping:
+    path: /shop
+    prompt_file: prompts/shopping.txt
+
+  careers:
+    path: /careers
+    prompt_file: prompts/careers.txt
+    upload_files:
+      - assets/sample_resume.pdf
+
+  # Additional pages of the site that were not used in the paper.
+  sort:
+    path: /sort
+    prompt_file: prompts/sort.txt
+
+  game:
+    path: /game
+    prompt_file: prompts/game.txt

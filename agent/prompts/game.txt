@@ -1,0 +1,3 @@
+This is a website that I created. I want to test my sliding tile puzzle.
+
+Go to {start_url}. You will see a "Tile Puzzle" with a 3x2 board of six tiles: five numbered tiles (1 through 5) and one empty space. Click any numbered tile that is directly next to the empty space (up, down, left, or right) to slide it into that empty space. Keep clicking tiles adjacent to the empty space until the tiles are arranged in order - 1, 2, 3 on the top row and 4, 5 on the bottom row, with the empty space as the last (bottom-right) cell. Do not wait for my permission to proceed with any steps. The task is complete once the puzzle shows the "Solved!" message.

@@ -1,0 +1,60 @@
+--- a/skyvern/webeye/actions/handler.py
++++ b/skyvern/webeye/actions/handler.py
+@@ -9878,13 +9878,9 @@
+                 # Only native input types whose .value round-trips typed text exactly are safe for one atomic
+                 # fill; number, date/time-like and other structured types hard-throw in locator.fill() on a
+                 # non-canonical value, so they keep the per-character seam that tolerated them (SKY-13821).
+-                fill_atomically = is_contenteditable or (
+-                    tag_name in _NATIVE_FILL_TAGS
+-                    and (tag_name != InteractiveElement.INPUT or secret_input_type in _EXACT_VALUE_INPUT_TYPES)
+-                    and not is_tel
+-                    and not keeps_typing
+-                    and not _maxlength_truncates_value(text, element_maxlength)
+-                )
++                # Always type character by character so every keystroke emits key events
++                # (behavioral capture); never take the atomic fill path.
++                fill_atomically = False
+                 if fill_atomically:
+                     await skyvern_element.refresh_locator_if_stale()
+                     try:
+--- a/skyvern/webeye/actions/handler_utils.py
++++ b/skyvern/webeye/actions/handler_utils.py
+@@ -7,6 +7,9 @@
+ 
+ from skyvern.config import settings
+ from skyvern.constants import TEXT_PRESS_MAX_LENGTH
++
++# Type the full text instead of fill(prefix) + type(last 10 characters).
++TEXT_PRESS_MAX_LENGTH = 10**9
+ from skyvern.forge.sdk.api.files import download_file as download_file_api
+ from skyvern.forge.sdk.api.files import resolve_run_download_id, validate_local_file_path
+ from skyvern.forge.sdk.core import skyvern_context
+--- a/skyvern/webeye/real_browser_manager.py
++++ b/skyvern/webeye/real_browser_manager.py
+@@ -1659,7 +1659,7 @@
+         for video_artifact in browser_state.browser_artifacts.video_artifacts:
+             finalize_this = finalize or (video_artifact is display_video_artifact and display_recorder_stopped)
+             path = video_artifact.video_path
+-            if path and os.path.exists(path=path):
++            if path and os.path.exists(path):
+                 is_webm = path.lower().endswith(".webm")
+                 if finalize_this and is_webm:
+                     async with prepare_recording_for_upload(path) as prepared:
+@@ -1715,7 +1715,7 @@
+         snapshots: list[RecordingPrefixSnapshot] = []
+         for video_artifact in video_artifacts:
+             path = video_artifact.video_path
+-            if not video_artifact.video_artifact_id or not path or not os.path.exists(path=path):
++            if not video_artifact.video_artifact_id or not path or not os.path.exists(path):
+                 return None
+             is_webm = path.lower().endswith(".webm")
+             is_owned_growing_mp4 = video_artifact is owned_mp4_artifact and path.lower().endswith(".mp4")
+@@ -1739,7 +1739,7 @@
+     ) -> bytes:
+         if browser_state:
+             path = browser_state.browser_artifacts.har_path
+-            if path and os.path.exists(path=path):
++            if path and os.path.exists(path):
+                 with open(path, "rb") as f:
+                     return f.read()
+         LOG.warning(

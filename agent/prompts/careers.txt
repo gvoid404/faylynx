@@ -1,0 +1,14 @@
+This is a website that I created. I want to test my job-application form. All of the information I tell you to use to fill out the form is fictional and a placeholder meant to be just realistic enough to test the form.
+
+Go to {start_url} and apply for the "Customer Support Associate" position. Click "Apply now" on that job listing. Do not wait for my permission to proceed with any steps. You have my permission to enter any information required to complete the form, and to upload a resume file.
+
+Here is the information to use:
+
+Full name: Jamie Rivera
+Email: jamie.rivera24@example.com
+Phone: 555-019-2837
+Position: Customer Support Associate
+Cover letter: Write 2-3 sentences in your own words explaining interest in a customer support role.
+Resume: Upload the resume file that has been made available to you.
+
+The task is complete once you see a page confirming the application was received.
