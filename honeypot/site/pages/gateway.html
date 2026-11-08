@@ -1,0 +1,73 @@
+<style>
+  .gw-card{max-width:680px;margin:1rem auto;padding:1.25rem 1.5rem;border:1px solid #d9d9e0;
+    border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  .gw-card h3{margin-top:0}
+  .gw-progress{color:#6b6b76;font-size:.85rem;margin-bottom:.5rem}
+  .gw-scenario{background:#f6f6fa;border-radius:8px;padding:.75rem 1rem;margin-bottom:1rem}
+  .gw-scenario-title{font-weight:700;margin-bottom:.25rem}
+  .gw-instruction{margin:.25rem 0;line-height:1.45}
+  .gw-payload{white-space:pre-wrap;background:#1e1e26;color:#e8e8ef;padding:.75rem;border-radius:6px;
+    font-size:.82rem;overflow:auto;max-height:180px}
+  .gw-label{display:block;font-weight:600;margin:.5rem 0 .25rem}
+  #gw-prompt{width:100%;box-sizing:border-box;padding:.6rem;border:1px solid #c9c9d2;border-radius:8px;
+    font:inherit;resize:vertical}
+  .gw-actions{margin-top:1rem;display:flex;gap:1rem;align-items:center}
+  .gw-btn{background:#3b5bdb;color:#fff;border:0;border-radius:8px;padding:.55rem 1.2rem;
+    font:inherit;cursor:pointer}
+  .gw-btn:disabled{background:#aeb6d6;cursor:not-allowed}
+  .gw-link{background:none;border:0;color:#6b6b76;cursor:pointer;text-decoration:underline;font:inherit}
+  .gw-consent-check{display:flex;gap:.5rem;align-items:center;margin:1rem 0}
+</style>
+<section id="gateway" class="gateway-view">
+  <h2>AI Assistant</h2>
+
+  <!-- Consent gate (shown first) -->
+  <div id="gw-consent" class="gw-card">
+    <h3>Before you start — research consent</h3>
+    <p>This is a research tool for a University of North Dakota study on telling human and automated
+      use of AI assistants apart. If you take part, we record, for this session only:</p>
+    <ul>
+      <li>the <strong>text of the prompts you type</strong> into the assistant below,</li>
+      <li><strong>how</strong> you type and move the mouse (timing and movement, not screen contents elsewhere),</li>
+      <li>basic connection information (browser type, language, and IP address).</li>
+    </ul>
+    <p>You will be asked to write ordinary prompts, and some prompts that use <strong>made-up,
+      fictional</strong> sensitive data that we provide. <strong>Please do not enter any real
+      personal, financial, or confidential information.</strong> Taking part is voluntary; you may
+      close the page at any time. Data is used only for research and reported in aggregate.</p>
+    <label class="gw-consent-check">
+      <input type="checkbox" id="gw-agree" /> I am 18 or older and I agree to take part.
+    </label>
+    <div class="gw-actions">
+      <button type="button" id="gw-start" class="gw-btn" disabled>Start</button>
+    </div>
+  </div>
+
+  <!-- Task (revealed after consent) -->
+  <div id="gw-task" class="gw-card" hidden>
+    <div class="gw-progress"><span id="gw-step">1</span> of <span id="gw-total">4</span></div>
+    <div class="gw-scenario">
+      <div class="gw-scenario-title" id="gw-title">Scenario</div>
+      <p class="gw-instruction" id="gw-instruction"></p>
+      <pre class="gw-payload" id="gw-payload" hidden></pre>
+    </div>
+    <label for="gw-prompt" class="gw-label">Your prompt to the assistant</label>
+    <textarea id="gw-prompt" rows="6" placeholder="Type your prompt here..."></textarea>
+    <div class="gw-actions">
+      <button type="button" id="gw-send" class="gw-btn">Send</button>
+      <button type="button" id="gw-skip" class="gw-link">Skip this one</button>
+    </div>
+  </div>
+
+  <!-- Simulated assistant reply + done -->
+  <div id="gw-reply" class="gw-card" hidden>
+    <div class="gw-scenario-title">Assistant</div>
+    <p id="gw-reply-text" class="gw-instruction"></p>
+    <div class="gw-actions"><button type="button" id="gw-next" class="gw-btn">Next</button></div>
+  </div>
+
+  <div id="gw-done" class="gw-card" hidden>
+    <h3>All done — thank you</h3>
+    <p>Your session was recorded for the study. You can close this page.</p>
+  </div>
+</section>
