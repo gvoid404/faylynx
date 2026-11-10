@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>IC3 AI</title>
+    <title>PromptGate AI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,500&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -42,19 +42,19 @@
         appScript.src = pathPrepend + "/js/app.js";
         document.head.appendChild(appScript);
     </script>
+    <style>
+        /* light-magenta theme (overrides the palette in css/style.css) */
+        html:root { --bg: #F9DDF4; --bg-panel: #FDF1FB; --nav-bg: #FDF1FB; --border: #EBC3E2;
+                    --accent: #A12C8C; --accent-glow: #C95BB4; }
+    </style>
 </head>
 
 <body>
     <nav>
-        <div class="logo"><a href="" data-route="/">IC3 AI</a></div>
+        <div class="logo"><a href="" data-route="/">PromptGate AI</a></div>
         <div class="links">
-            <a href="" data-route="/">Home</a>
-            <a href="forums" data-route="/forums">Forums</a>
-            <a href="flights" data-route="/flights">Book a Flight</a>
-            <a href="shop" data-route="/shop">Shop</a>
-            <a href="sort" data-route="/sort">Sort</a>
-            <a href="careers" data-route="/careers">Careers</a>
-            <a href="game" data-route="/game">Game</a>
+            <a href="gateway" data-route="/gateway">Prompt Study</a>
+            <a href="detector" data-route="/detector">Live Detector</a>
         </div>
     </nav>
 
@@ -63,7 +63,7 @@
     <div id="overlay"></div>
 
     <footer>
-        <p>© 2026 IC3 AI</p>
+        <p>© 2026 PromptGate AI · University of North Dakota research study</p>
     </footer>
 </body>
 

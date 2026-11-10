@@ -1,0 +1,46 @@
+<style>
+  .dt-card{max-width:720px;margin:1rem auto;padding:1.25rem 1.5rem;border:1px solid var(--border);border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  #dt-prompt{width:100%;box-sizing:border-box;padding:.6rem;border:1px solid #c9c9d2;border-radius:8px;font:inherit;resize:vertical}
+  .dt-btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:.55rem 1.2rem;font:inherit;cursor:pointer}
+  .dt-btn:disabled{opacity:.5;cursor:not-allowed}
+  .dt-verdict{font-size:1.5rem;font-weight:700;margin:.2rem 0 .6rem;font-family:var(--font-serif)}
+  .dt-allow{color:#1f7a3d}.dt-shadow{color:#b3261e}.dt-auto{color:#8a5a00}
+  .dt-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .dt-box{background:#fbf3f9;border-radius:8px;padding:.7rem .9rem}
+  .dt-box h4{margin:.1rem 0 .4rem}
+  .dt-bar{height:8px;border-radius:4px;background:#ead3e4;margin:.15rem 0 .5rem;overflow:hidden}
+  .dt-bar>span{display:block;height:100%;background:var(--accent)}
+  .dt-small{font-size:.85rem;color:var(--fg-muted)}
+  .dt-fb button{color:var(--fg);margin:.25rem .35rem .25rem 0;border:1px solid var(--border);background:#fff;border-radius:8px;padding:.35rem .8rem;font:inherit;cursor:pointer}
+  @media (max-width:640px){.dt-grid{grid-template-columns:1fr}}
+</style>
+<section>
+  <h2>Live Detector</h2>
+  <div class="dt-card">
+    <p>Enter any prompt. The gateway reads two things: <strong>what</strong> the prompt says and
+      <strong>how</strong> it was entered (typing rhythm, mouse, paste). It then assigns one of three
+      categories: Allow, Shadow AI, or Automated AI Pipeline.</p>
+    <p class="dt-small">Research tool. Your prompt text and typing behavior for this page are recorded.
+      Do not enter real personal or confidential information.</p>
+    <textarea id="dt-prompt" rows="6" placeholder="Type or paste a prompt..." autocomplete="off" spellcheck="false"></textarea>
+    <div style="margin-top:.8rem;display:flex;gap:1rem;align-items:center">
+      <button type="button" id="dt-go" class="dt-btn">Analyze</button>
+      <button type="button" id="dt-clear" class="gw-link" style="background:none;border:0;text-decoration:underline;cursor:pointer;font:inherit">Clear</button>
+      <span id="dt-status" class="dt-small"></span>
+    </div>
+  </div>
+  <div class="dt-card" id="dt-result" hidden>
+    <div class="dt-small">Gateway category</div>
+    <div class="dt-verdict" id="dt-verdict"></div>
+    <div class="dt-grid">
+      <div class="dt-box"><h4>What it says (content)</h4><div id="dt-content"></div></div>
+      <div class="dt-box"><h4>How it was entered (behavior)</h4><div id="dt-actor"></div></div>
+    </div>
+    <div class="dt-fb" id="dt-fb" style="margin-top:1rem">
+      <div class="dt-small">Help the study: what was this prompt really?</div>
+      <button data-c="Allow">Allow</button><button data-c="Shadow AI">Shadow AI</button><button data-c="Automated AI Pipelines">Automated AI Pipeline</button>
+      <span id="dt-fb-msg" class="dt-small"></span>
+    </div>
+    <div class="dt-small" id="dt-models" style="margin-top:.6rem"></div>
+  </div>
+</section>
