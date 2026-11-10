@@ -55,6 +55,7 @@
         <div class="links">
             <a href="gateway">Prompt Study</a>
             <a href="detector">Live Detector</a>
+            <a href="#" id="logout-link">Log out</a>
         </div>
     </nav>
 
@@ -65,6 +66,32 @@
     <footer>
         <p>© 2026 PromptGate AI · University of North Dakota research study</p>
     </footer>
+    <script>
+        // Log out: the site uses the browser's built-in login, which has no logout of its own.
+        // Sending a request with throwaway credentials to /logout (always answers 401) makes the
+        // browser drop the saved login; then return to the open home page.
+        document.addEventListener("click", function (e) {
+            var a = e.target.closest && e.target.closest("#logout-link");
+            if (!a) return;
+            e.preventDefault();
+            var base = "/" + (location.pathname.split("/")[1] || "HOME");
+            var done = function () { location.href = base + "/?loggedout=1"; };
+            try {
+                var x = new XMLHttpRequest();
+                x.open("GET", base + "/logout", true, "logout", "x" + Date.now());
+                x.onloadend = done; x.send();
+                setTimeout(done, 2500);
+            } catch (err) { done(); }
+        });
+        if (location.search.indexOf("loggedout=1") >= 0) {
+            window.addEventListener("load", function () {
+                var n = document.createElement("div");
+                n.textContent = "You are logged out. Close this browser window to be certain.";
+                n.style.cssText = "max-width:680px;margin:1rem auto 0;padding:.6rem 1rem;border-radius:8px;background:#fff;border:1px solid #EBC3E2;text-align:center";
+                var m = document.getElementById("content"); m.parentNode.insertBefore(n, m);
+            });
+        }
+    </script>
 </body>
 
 </html>
