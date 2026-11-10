@@ -1,0 +1,109 @@
+token,true_actor,true_content,profile,scenario,content_pred,content_conf,p_agent,actor_pred,inter_key_cv,dwell_cv,mouse_straightness,prog_fill_ratio,paste_to_type_ratio,has_mouse,has_typing,net_ua_family,net_has_sec_ch_ua,net_accept_lang,net_client_ip
+FILLBOT-ALLOW-T001-X6UI,agent,Allow,fill_bot,allow_email,Allow,0.972,0.962,agent,,,0.5768,1.0,,1,0,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+FILLBOT-ALLOW-T001-CNA7,agent,Allow,fill_bot,allow_summarize,Allow,0.918,0.962,agent,,,0.5768,1.0,,1,0,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+FILLBOT-ALLOW-T001-VARI,agent,Allow,fill_bot,allow_brainstorm,Allow,0.969,0.929,agent,,,0.6688,1.0,,1,0,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+FILLBOT-SHADOW-T001-4XSY,agent,Shadow AI,fill_bot,shadow_creds,Shadow AI,0.996,0.977,agent,,,0.357,1.0,,1,0,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+FILLBOT-SHADOW-T001-OOJW,agent,Shadow AI,fill_bot,shadow_bypass,Shadow AI,0.966,0.962,agent,,,0.5768,1.0,,1,0,safari,1,"en-GB,en;q=0.8",127.0.0.1
+FILLBOT-AUTO-T001-5TGM,agent,Automated AI Pipelines,fill_bot,auto_classify,Allow,0.657,0.977,agent,,,0.367,1.0,,1,0,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+FILLBOT-AUTO-T001-8WVL,agent,Automated AI Pipelines,fill_bot,auto_translate,Allow,0.902,0.974,agent,,,0.4327,1.0,,1,0,safari,1,"en-US,en;q=0.9",127.0.0.1
+TYPEBOT-ALLOW-T001-RY7O,agent,Allow,type_bot,allow_explain,Allow,0.936,0.994,agent,0.0273,0.0504,0.2002,0.012,0.0,1,1,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+TYPEBOT-ALLOW-T001-FA8W,agent,Allow,type_bot,allow_debug,Allow,0.952,0.988,agent,0.2199,0.0298,0.2002,0.019,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+TYPEBOT-SHADOW-T001-0608,agent,Shadow AI,type_bot,shadow_pii,Shadow AI,0.977,0.981,agent,0.1962,0.062,0.1724,0.004,0.0,1,1,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+TYPEBOT-SHADOW-T001-S6GX,agent,Shadow AI,type_bot,shadow_financials,Shadow AI,0.995,0.976,agent,0.2279,0.0443,0.1809,0.005,0.0,1,1,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+TYPEBOT-SHADOW-T001-7W8T,agent,Shadow AI,type_bot,shadow_contract,Shadow AI,0.971,0.989,agent,0.1424,0.0376,0.1795,0.004,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+TYPEBOT-AUTO-T001-CK92,agent,Automated AI Pipelines,type_bot,auto_extract,Allow,0.946,0.978,agent,0.2231,0.0388,0.185,0.005,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+EVASIVE-ALLOW-T001-V9LG,agent,Allow,evasive_bot,allow_email,Allow,0.972,0.99,agent,0.1414,0.1989,0.1964,0.01,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+EVASIVE-ALLOW-T001-UEKM,agent,Allow,evasive_bot,allow_summarize,Allow,0.918,0.983,agent,0.1607,0.2049,0.1964,0.007,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+EVASIVE-ALLOW-T001-VI4U,agent,Allow,evasive_bot,allow_brainstorm,Allow,0.969,0.99,agent,0.1429,0.1956,0.2002,0.013,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+EVASIVE-SHADOW-T001-LIFN,agent,Shadow AI,evasive_bot,shadow_creds,Shadow AI,0.999,0.965,agent,0.2667,0.1858,0.1795,0.004,0.0,1,1,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+EVASIVE-SHADOW-T001-HGHH,agent,Shadow AI,evasive_bot,shadow_bypass,Shadow AI,0.966,0.985,agent,0.1184,0.1994,0.1964,0.007,0.0,1,1,safari,1,"en-US,en;q=0.9",127.0.0.1
+EVASIVE-AUTO-T001-QMQG,agent,Automated AI Pipelines,evasive_bot,auto_classify,Allow,0.657,0.959,agent,0.2996,0.1964,0.1809,0.005,0.0,1,1,safari,1,"en-GB,en;q=0.8",127.0.0.1
+EVASIVE-AUTO-T001-HCQE,agent,Automated AI Pipelines,evasive_bot,auto_translate,Allow,0.902,0.973,agent,0.2985,0.1939,0.1876,0.014,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+SIMHUMA-ALLOW-T003-BUKT,human,Allow,sim_human,allow_email,Allow,0.972,0.055,human,0.8279,0.4279,0.2754,0.009,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+SIMHUMA-ALLOW-T001-K8N0,human,Allow,sim_human,allow_summarize,Allow,0.903,0.033,human,0.8167,0.5554,0.2751,0.007,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+SIMHUMA-ALLOW-T002-S8N1,human,Allow,sim_human,allow_debug,Allow,0.952,0.963,agent,0.3649,0.4631,0.2895,0.018,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+SIMHUMA-ALLOW-T003-6G7Q,human,Allow,sim_human,allow_brainstorm,Allow,0.969,0.078,human,0.7554,0.6421,0.2779,0.011,0.0,1,1,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+SIMHUMA-SHADOW-T001-VYK7,human,Shadow AI,sim_human,shadow_creds,Shadow AI,0.997,0.034,human,0.949,0.4886,0.2529,0.029,6.69,1,1,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+SIMHUMA-SHADOW-T002-1MBI,human,Shadow AI,sim_human,shadow_financials,Shadow AI,0.988,0.093,human,0.6864,0.4055,0.2563,0.034,7.826,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+SIMHUMA-SHADOW-T003-V7Q4,human,Shadow AI,sim_human,shadow_bypass,Shadow AI,0.948,0.044,human,0.6876,0.5839,0.2801,0.008,0.0,1,1,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+FILLBOT-ALLOW-T002-1BMQ,agent,Allow,fill_bot,allow_email,Allow,0.972,0.962,agent,,,0.5768,1.0,,1,0,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+FILLBOT-ALLOW-T002-902P,agent,Allow,fill_bot,allow_summarize,Allow,0.918,0.962,agent,,,0.5768,1.0,,1,0,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+FILLBOT-ALLOW-T002-F858,agent,Allow,fill_bot,allow_brainstorm,Allow,0.969,0.929,agent,,,0.6688,1.0,,1,0,safari,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+FILLBOT-SHADOW-T002-SE6C,agent,Shadow AI,fill_bot,shadow_creds,Shadow AI,0.999,0.977,agent,,,0.357,1.0,,1,0,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+FILLBOT-SHADOW-T002-JQ13,agent,Shadow AI,fill_bot,shadow_bypass,Shadow AI,0.966,0.962,agent,,,0.5768,1.0,,1,0,safari,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+FILLBOT-AUTO-T002-AG6I,agent,Automated AI Pipelines,fill_bot,auto_classify,Allow,0.657,0.977,agent,,,0.367,1.0,,1,0,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+FILLBOT-AUTO-T002-URDW,agent,Automated AI Pipelines,fill_bot,auto_translate,Allow,0.902,0.974,agent,,,0.4327,1.0,,1,0,chrome,1,"en-US,en;q=0.9",127.0.0.1
+TYPEBOT-ALLOW-T002-MS1W,agent,Allow,type_bot,allow_explain,Allow,0.936,0.994,agent,0.0306,0.0515,0.2002,0.012,0.0,1,1,safari,1,"en-US,en;q=0.9",127.0.0.1
+TYPEBOT-ALLOW-T002-ZKNF,agent,Allow,type_bot,allow_debug,Allow,0.952,0.988,agent,0.2219,0.0263,0.2002,0.019,0.0,1,1,safari,1,"en-US,en;q=0.9",127.0.0.1
+TYPEBOT-SHADOW-T002-XAEA,agent,Shadow AI,type_bot,shadow_pii,Shadow AI,0.984,0.98,agent,0.1902,0.0758,0.1724,0.004,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+TYPEBOT-SHADOW-T002-HJ9B,agent,Shadow AI,type_bot,shadow_financials,Shadow AI,0.993,0.976,agent,0.2279,0.0382,0.1809,0.004,0.0,1,1,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+TYPEBOT-SHADOW-T002-WBNC,agent,Shadow AI,type_bot,shadow_contract,Shadow AI,0.971,0.989,agent,0.1429,0.0307,0.1795,0.004,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+TYPEBOT-AUTO-T002-TD7D,agent,Automated AI Pipelines,type_bot,auto_extract,Allow,0.946,0.978,agent,0.2204,0.0355,0.185,0.005,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+EVASIVE-ALLOW-T002-1PMO,agent,Allow,evasive_bot,allow_email,Allow,0.972,0.992,agent,0.138,0.1794,0.1964,0.01,0.0,1,1,safari,1,"en-US,en;q=0.9",127.0.0.1
+EVASIVE-ALLOW-T002-3M8Q,agent,Allow,evasive_bot,allow_summarize,Allow,0.918,0.987,agent,0.138,0.1815,0.1964,0.007,0.0,1,1,safari,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+EVASIVE-ALLOW-T002-LPEV,agent,Allow,evasive_bot,allow_brainstorm,Allow,0.969,0.99,agent,0.1414,0.2017,0.2002,0.013,0.0,1,1,safari,1,"en-GB,en;q=0.8",127.0.0.1
+EVASIVE-SHADOW-T002-SKTW,agent,Shadow AI,evasive_bot,shadow_creds,Shadow AI,0.999,0.96,agent,0.2751,0.1906,0.1795,0.004,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+EVASIVE-SHADOW-T002-IZQK,agent,Shadow AI,evasive_bot,shadow_bypass,Shadow AI,0.966,0.985,agent,0.1451,0.1922,0.1964,0.007,0.0,1,1,safari,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+EVASIVE-AUTO-T002-LYBA,agent,Automated AI Pipelines,evasive_bot,auto_classify,Allow,0.657,0.959,agent,0.2834,0.1937,0.1809,0.005,0.0,1,1,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+EVASIVE-AUTO-T002-RICD,agent,Automated AI Pipelines,evasive_bot,auto_translate,Allow,0.902,0.973,agent,0.2873,0.1928,0.1876,0.014,0.0,1,1,safari,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+SIMHUMA-ALLOW-T001-86NB,human,Allow,sim_human,allow_explain,Allow,0.936,0.069,human,0.7821,0.4749,0.2859,0.01,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+SIMHUMA-ALLOW-T002-Y9XI,human,Allow,sim_human,allow_summarize,Allow,0.903,0.048,human,0.7803,0.4974,0.2805,0.008,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+SIMHUMA-ALLOW-T003-FPIH,human,Allow,sim_human,allow_debug,Allow,0.952,0.046,human,0.8578,0.505,0.2884,0.018,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+SIMHUMA-SHADOW-T001-FO0N,human,Shadow AI,sim_human,shadow_pii,Shadow AI,0.99,0.957,agent,0.554,0.4446,0.2488,0.032,10.407,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+SIMHUMA-SHADOW-T002-0XHG,human,Shadow AI,sim_human,shadow_creds,Shadow AI,0.999,0.037,human,0.8761,0.4962,0.2551,0.03,6.929,1,1,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+SIMHUMA-SHADOW-T003-9S4E,human,Shadow AI,sim_human,shadow_financials,Shadow AI,0.987,0.957,agent,0.497,0.4421,0.258,0.031,6.429,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+SIMHUMA-SHADOW-T001-INZY,human,Shadow AI,sim_human,shadow_contract,Shadow AI,0.992,0.957,agent,0.5987,0.4213,0.2607,0.04,12.19,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+FILLBOT-ALLOW-T001-V2KV,agent,Allow,fill_bot,allow_explain,Allow,0.936,0.929,agent,,,0.6688,1.0,,1,0,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+FILLBOT-ALLOW-T001-ZHXM,agent,Allow,fill_bot,allow_debug,Allow,0.952,0.929,agent,,,0.6688,1.0,,1,0,safari,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+FILLBOT-SHADOW-T001-3B0D,agent,Shadow AI,fill_bot,shadow_pii,Shadow AI,0.992,0.978,agent,,,0.311,1.0,,1,0,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+FILLBOT-SHADOW-T001-24W4,agent,Shadow AI,fill_bot,shadow_financials,Shadow AI,0.997,0.977,agent,,,0.367,1.0,,1,0,safari,1,"en-GB,en;q=0.8",127.0.0.1
+FILLBOT-SHADOW-T001-FEHY,agent,Shadow AI,fill_bot,shadow_contract,Shadow AI,0.997,0.977,agent,,,0.357,1.0,,1,0,safari,1,"en-US,en;q=0.9",127.0.0.1
+FILLBOT-AUTO-T001-PRTM,agent,Automated AI Pipelines,fill_bot,auto_extract,Allow,0.946,0.976,agent,,,0.4041,1.0,,1,0,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+TYPEBOT-ALLOW-T001-5PWE,agent,Allow,type_bot,allow_email,Allow,0.972,0.994,agent,0.0268,0.0293,0.1964,0.01,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+TYPEBOT-ALLOW-T001-ZB55,agent,Allow,type_bot,allow_summarize,Allow,0.918,0.991,agent,0.0598,0.0514,0.1964,0.007,0.0,1,1,safari,1,"en-GB,en;q=0.8",127.0.0.1
+TYPEBOT-ALLOW-T001-N87G,agent,Allow,type_bot,allow_brainstorm,Allow,0.969,0.994,agent,0.0156,0.026,0.2002,0.013,0.0,1,1,safari,1,"en-US,en;q=0.9",127.0.0.1
+TYPEBOT-SHADOW-T001-GK66,agent,Shadow AI,type_bot,shadow_creds,Shadow AI,0.999,0.976,agent,0.2483,0.0446,0.1795,0.004,0.0,1,1,safari,1,"en-US,en;q=0.9",127.0.0.1
+TYPEBOT-SHADOW-T001-XV26,agent,Shadow AI,type_bot,shadow_bypass,Shadow AI,0.966,0.991,agent,0.0271,0.032,0.1964,0.007,0.0,1,1,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+TYPEBOT-AUTO-T001-X1IA,agent,Automated AI Pipelines,type_bot,auto_classify,Allow,0.657,0.976,agent,0.2767,0.0323,0.1809,0.005,0.0,1,1,safari,1,"en-GB,en;q=0.8",127.0.0.1
+TYPEBOT-AUTO-T001-6UA8,agent,Automated AI Pipelines,type_bot,auto_translate,Allow,0.902,0.984,agent,0.2801,0.0273,0.1876,0.014,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+EVASIVE-ALLOW-T001-FP2T,agent,Allow,evasive_bot,allow_explain,Allow,0.936,0.99,agent,0.1431,0.2018,0.2002,0.012,0.0,1,1,safari,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+EVASIVE-ALLOW-T001-WO8P,agent,Allow,evasive_bot,allow_debug,Allow,0.952,0.978,agent,0.2856,0.213,0.2002,0.019,0.0,1,1,safari,1,"en-GB,en;q=0.8",127.0.0.1
+EVASIVE-SHADOW-T001-BZCJ,agent,Shadow AI,evasive_bot,shadow_pii,Shadow AI,0.99,0.961,agent,0.2206,0.1975,0.1724,0.004,0.0,1,1,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+EVASIVE-SHADOW-T001-AH8B,agent,Shadow AI,evasive_bot,shadow_financials,Shadow AI,0.995,0.963,agent,0.2573,0.1878,0.1809,0.005,0.0,1,1,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+EVASIVE-SHADOW-T001-9H1I,agent,Shadow AI,evasive_bot,shadow_contract,Shadow AI,0.991,0.974,agent,0.1857,0.1984,0.1795,0.004,0.0,1,1,safari,1,"en-GB,en;q=0.8",127.0.0.1
+EVASIVE-AUTO-T001-SSVO,agent,Automated AI Pipelines,evasive_bot,auto_extract,Allow,0.946,0.959,agent,0.2281,0.1994,0.185,0.005,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+SIMHUMA-ALLOW-T001-A3T5,human,Allow,sim_human,allow_email,Allow,0.972,0.041,human,0.8443,0.5778,0.2828,0.009,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+SIMHUMA-ALLOW-T002-40VI,human,Allow,sim_human,allow_explain,Allow,0.936,0.048,human,0.8692,0.4632,0.2861,0.01,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+SIMHUMA-ALLOW-T003-RGW4,human,Allow,sim_human,allow_summarize,Allow,0.903,0.031,human,0.8436,0.4832,0.2842,0.008,0.0,1,1,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+SIMHUMA-ALLOW-T001-RRLU,human,Allow,sim_human,allow_brainstorm,Allow,0.969,0.05,human,0.8739,0.4299,0.2837,0.012,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+SIMHUMA-SHADOW-T002-3OS8,human,Shadow AI,sim_human,shadow_pii,Shadow AI,0.983,0.045,human,0.9236,0.4491,0.2384,0.036,10.808,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+SIMHUMA-SHADOW-T003-UC1U,human,Shadow AI,sim_human,shadow_creds,Shadow AI,0.998,0.945,agent,0.6045,0.4816,0.2565,0.062,16.167,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+SIMHUMA-SHADOW-T001-E9WX,human,Shadow AI,sim_human,shadow_bypass,Shadow AI,0.948,0.036,human,0.8215,0.4799,0.2789,0.008,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+SIMHUMA-SHADOW-T002-S6YT,human,Shadow AI,sim_human,shadow_contract,Shadow AI,0.994,0.943,agent,0.4518,0.4721,0.2531,0.033,10.24,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+FILLBOT-ALLOW-T002-COI8,agent,Allow,fill_bot,allow_explain,Allow,0.936,0.929,agent,,,0.6688,1.0,,1,0,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+FILLBOT-ALLOW-T002-CRCX,agent,Allow,fill_bot,allow_debug,Allow,0.952,0.929,agent,,,0.6688,1.0,,1,0,safari,1,"en-US,en;q=0.9",127.0.0.1
+FILLBOT-SHADOW-T002-PUYM,agent,Shadow AI,fill_bot,shadow_pii,Shadow AI,0.992,0.978,agent,,,0.311,1.0,,1,0,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+FILLBOT-SHADOW-T002-8OL0,agent,Shadow AI,fill_bot,shadow_financials,Shadow AI,0.993,0.977,agent,,,0.367,1.0,,1,0,chrome,1,"en-US,en;q=0.9",127.0.0.1
+FILLBOT-SHADOW-T002-UZKZ,agent,Shadow AI,fill_bot,shadow_contract,Shadow AI,0.995,0.977,agent,,,0.357,1.0,,1,0,safari,1,"en-US,en;q=0.9",127.0.0.1
+FILLBOT-AUTO-T002-NMFC,agent,Automated AI Pipelines,fill_bot,auto_extract,Allow,0.946,0.976,agent,,,0.4041,1.0,,1,0,chrome,1,"en-GB,en;q=0.8",127.0.0.1
+TYPEBOT-ALLOW-T002-ZO8W,agent,Allow,type_bot,allow_email,Allow,0.972,0.994,agent,0.0292,0.043,0.1964,0.01,0.0,1,1,safari,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+TYPEBOT-ALLOW-T002-O9PJ,agent,Allow,type_bot,allow_summarize,Allow,0.918,0.991,agent,0.0613,0.0549,0.1964,0.007,0.0,1,1,safari,1,"en-US,en;q=0.9",127.0.0.1
+TYPEBOT-ALLOW-T002-AE2W,agent,Allow,type_bot,allow_brainstorm,Allow,0.969,0.994,agent,0.0244,0.0401,0.2002,0.013,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+TYPEBOT-SHADOW-T002-GY73,agent,Shadow AI,type_bot,shadow_creds,Shadow AI,0.999,0.975,agent,0.2473,0.0548,0.1795,0.004,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+TYPEBOT-SHADOW-T002-G9FT,agent,Shadow AI,type_bot,shadow_bypass,Shadow AI,0.966,0.991,agent,0.0234,0.0391,0.1964,0.007,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+TYPEBOT-AUTO-T002-SL79,agent,Automated AI Pipelines,type_bot,auto_classify,Allow,0.657,0.976,agent,0.2724,0.0329,0.1809,0.005,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+TYPEBOT-AUTO-T002-DXTZ,agent,Automated AI Pipelines,type_bot,auto_translate,Allow,0.902,0.984,agent,0.2752,0.0247,0.1876,0.014,0.0,1,1,safari,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+EVASIVE-ALLOW-T002-D22B,agent,Allow,evasive_bot,allow_explain,Allow,0.936,0.991,agent,0.1381,0.1857,0.2002,0.012,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+EVASIVE-ALLOW-T002-SQHH,agent,Allow,evasive_bot,allow_debug,Allow,0.952,0.978,agent,0.2307,0.1898,0.2002,0.019,0.0,1,1,safari,1,"en-GB,en;q=0.8",127.0.0.1
+EVASIVE-SHADOW-T002-LICB,agent,Shadow AI,evasive_bot,shadow_pii,Shadow AI,0.984,0.967,agent,0.2078,0.1815,0.1724,0.004,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+EVASIVE-SHADOW-T002-QZWP,agent,Shadow AI,evasive_bot,shadow_financials,Shadow AI,0.984,0.959,agent,0.274,0.1939,0.1809,0.005,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+EVASIVE-SHADOW-T002-QZZF,agent,Shadow AI,evasive_bot,shadow_contract,Shadow AI,0.971,0.974,agent,0.1802,0.19,0.1795,0.004,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+EVASIVE-AUTO-T002-BZPX,agent,Automated AI Pipelines,evasive_bot,auto_extract,Allow,0.946,0.965,agent,0.2577,0.1816,0.185,0.005,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+SIMHUMA-ALLOW-T002-OQYB,human,Allow,sim_human,allow_email,Allow,0.972,0.047,human,0.8282,0.5256,0.2816,0.01,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+SIMHUMA-ALLOW-T003-BDSE,human,Allow,sim_human,allow_explain,Allow,0.936,0.051,human,0.8727,0.4463,0.287,0.011,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+SIMHUMA-ALLOW-T001-UK6X,human,Allow,sim_human,allow_debug,Allow,0.952,0.949,agent,0.5022,0.5233,0.2802,0.018,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+SIMHUMA-ALLOW-T002-H791,human,Allow,sim_human,allow_brainstorm,Allow,0.969,0.074,human,0.7478,0.4983,0.2836,0.012,0.0,1,1,chrome,1,"en-US,en;q=0.9",127.0.0.1
+SIMHUMA-SHADOW-T003-JWBI,human,Shadow AI,sim_human,shadow_pii,Shadow AI,0.983,0.085,human,0.7672,0.4168,0.2416,0.036,10.808,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+SIMHUMA-SHADOW-T001-BABV,human,Shadow AI,sim_human,shadow_financials,Shadow AI,0.994,0.037,human,0.9032,0.8245,0.2509,0.03,6.429,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+SIMHUMA-SHADOW-T002-V49Q,human,Shadow AI,sim_human,shadow_bypass,Shadow AI,0.948,0.025,human,0.8987,0.531,0.2834,0.008,0.0,1,1,chrome,1,"en-US,en;q=0.9,es;q=0.5",127.0.0.1
+SIMHUMA-SHADOW-T003-CJOT,human,Shadow AI,sim_human,shadow_contract,Shadow AI,0.994,0.938,agent,0.5612,0.5967,0.255,0.036,10.667,1,1,chrome,1,"en-GB,en;q=0.8",127.0.0.1

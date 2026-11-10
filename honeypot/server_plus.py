@@ -16,10 +16,12 @@ Usage:  python server_plus.py [port] [bind]        default: 8781 127.0.0.1
 """
 import http.server
 import json
+import uuid
 import re
 import socketserver
 import sys
 import threading
+sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent))
 from collections import defaultdict
 from pathlib import Path
 
@@ -94,9 +96,18 @@ class Handler(http.server.BaseHTTPRequestHandler):
         body = b""
         if "Content-Length" in self.headers:
             try:
-                body = self.rfile.read(int(self.headers["Content-Length"]))
+                body = self.rfile.read(min(int(self.headers["Content-Length"]), 4_000_000))
             except (ValueError, OSError):
                 body = b""
+        result = None
+        if endpoint == "classify":          # live detector: run the models, log input + result
+            try:
+                import inference
+                req = json.loads(body.decode("utf-8", errors="ignore") or "{}")
+                result = inference.analyze(req.get("prompt", ""), req.get("events", []))
+            except Exception as e:  # noqa: BLE001
+                result = {"error": f"{type(e).__name__}: {e}"}
+            result["request_id"] = uuid.uuid4().hex[:12]
         capture_path = CAPTURE_DIR / f"{version}_{endpoint}.jsonl"
         record = {
             "ts": self.log_date_time_string(),
@@ -108,16 +119,18 @@ class Handler(http.server.BaseHTTPRequestHandler):
             "net": self._net(),                      # <-- lightweight network fingerprint
             "body": body.decode("utf-8", errors="ignore"),
         }
+        if result is not None:
+            record["result"] = result
         try:
             with _lock_for(capture_path), open(capture_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(record) + "\n")
         except OSError as e:
             sys.stderr.write(f"capture write failed: {e}\n")
-        out = b"Success"
+        out = b"Success" if result is None else json.dumps(result).encode("utf-8")
         self.send_response(200)
         self.send_header("Access-Control-Allow-Credentials", "true")
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Content-Type", "text/plain")
+        self.send_header("Content-Type", "text/plain" if result is None else "application/json")
         self.send_header("Content-Length", str(len(out)))
         self.end_headers()
         self.wfile.write(out)
