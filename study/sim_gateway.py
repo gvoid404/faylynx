@@ -4,9 +4,9 @@
 behavior + network for it. Plan (default): every Automated prompt under all 3 profiles, plus every
 Allow/Shadow prompt once (profile rotates), so content and actor are not confounded.
 
-  python sim_gateway.py --base https://clemons.3-20-226-103.nip.io --manifest agent_manifest.jsonl
+  python sim_gateway.py --base https://clemons.us --user study
 """
-import argparse, json, random, string, sys, time
+import argparse, getpass, json, os, random, string, sys, time
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -32,8 +32,9 @@ def paste(page, text):
       el.value = el.value + text; el.dispatchEvent(new Event('input',{bubbles:true})); }""", [text])
 
 
-def run(browser, base, token, p, profile, rng, insecure):
-    ctx = browser.new_context(viewport={"width": 1280, "height": 900}, ignore_https_errors=insecure)
+def run(browser, base, token, p, profile, rng, insecure, creds=None):
+    ctx = browser.new_context(viewport={"width": 1280, "height": 900}, ignore_https_errors=insecure,
+                              http_credentials=creds)
     page = ctx.new_page()
     try:
         page.goto(f"{base}/{token}/gateway?scenario={p['id']}", wait_until="networkidle", timeout=30000)
@@ -67,8 +68,13 @@ def main():
     ap.add_argument("--manifest", default="agent_manifest.jsonl")
     ap.add_argument("--limit", type=int, default=0, help="run only the first N jobs (smoke test)")
     ap.add_argument("--insecure", action="store_true")
+    ap.add_argument("--user", help="site login username (the password is read from the PROMPTGATE_PASSWORD\n                    environment variable, or asked for; it is never put on the command line)")
     ap.add_argument("--seed", type=int, default=20261109)
     a = ap.parse_args(); rng = random.Random(a.seed)
+    creds = None
+    if a.user:
+        pw = os.environ.get("PROMPTGATE_PASSWORD") or getpass.getpass(f"Site password for {a.user}: ")
+        creds = {"username": a.user, "password": pw}
     bank = json.load(open(a.bank))["prompts"]
     jobs = [(pr, p) for p in bank if p["class"] == "Automated AI Pipelines" for pr in PROFILES]
     jobs += [(PROFILES[i % 3], p) for i, p in enumerate(q for q in bank if q["class"] != "Automated AI Pipelines")]
@@ -79,7 +85,7 @@ def main():
         browser = pw.chromium.launch(headless=True, args=["--no-sandbox"])
         for i, (profile, p) in enumerate(jobs, 1):
             token = tok(profile, p["id"]); t0 = time.time()
-            try: run(browser, a.base, token, p, profile, rng, a.insecure); status = "ok"
+            try: run(browser, a.base, token, p, profile, rng, a.insecure, creds); status = "ok"
             except Exception as e: status = f"error:{type(e).__name__}"
             mf.write(json.dumps({"token": token, "label": "agent", "profile": profile, "prompt_id": p["id"],
                                  "target_class": p["class"], "status": status}) + "\n"); mf.flush()
