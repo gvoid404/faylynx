@@ -50,6 +50,20 @@ def _lock_for(path: Path) -> threading.Lock:
         return _capture_locks[str(path)]
 
 
+def _site_file(rel: str):
+    """Path of a file inside site/ for the relative address `rel`, or None.
+    Refuses anything that would leave the site folder, so only site files are served."""
+    if not rel or "\\" in rel or "\x00" in rel or any(part in ("..", ".") for part in rel.split("/")):
+        return None
+    root = ROOT.resolve()
+    candidate = (root / rel).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError:
+        return None
+    return candidate if candidate.is_file() else None
+
+
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         sys.stderr.write(f"[{self.command}] {self.path} -> {args[1]}\n")
@@ -59,16 +73,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not m:
             return self._404()
         sub = m.group(2) or ""
-        if not sub.startswith("/"):
-            return self._404()
+        if not sub.startswith("/") or ".." in sub.split("/") or "\\" in sub:
+            return self._404()      # never serve anything outside site/
 
-        candidate = ROOT / sub.lstrip("/")
-        if candidate.is_file():
+        candidate = _site_file(sub.lstrip("/"))
+        if candidate:
             return self._serve_file(candidate)
 
         if sub.startswith("/pages/"):
-            page_file = ROOT / "pages" / (sub[len("/pages/"):] + ".html")
-            if page_file.is_file():
+            page_file = _site_file("pages/" + sub[len("/pages/"):] + ".html")
+            if page_file:
                 return self._serve_file(page_file)
 
         # Single-page app: unknown HTML routes load index.html; missing assets are 404.
@@ -85,6 +99,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not sub.startswith("/"):
             return self._404()
         endpoint = sub[1:]
+        if not re.fullmatch(r"[A-Za-z0-9_]{1,32}", endpoint):
+            return self._404()      # capture endpoints are single plain words
 
         body = b""
         if "Content-Length" in self.headers:

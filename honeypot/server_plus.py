@@ -26,11 +26,12 @@ from collections import defaultdict
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE / "site"
+ROOT = (HERE / "site").resolve()
 CAPTURE_DIR = HERE.parent / "captures"
 CAPTURE_DIR.mkdir(parents=True, exist_ok=True)
 
 VERSION_RE = re.compile(r"^/([A-Z0-9_\-]{1,32})(/.*)?$")
+ENDPOINT_RE = re.compile(r"^[A-Za-z0-9_]{1,32}$")          # capture endpoints are single plain words
 MIME = {".html": "text/html", ".css": "text/css", ".js": "application/javascript",
         ".json": "application/json", ".png": "image/png", ".jpg": "image/jpeg",
         ".svg": "image/svg+xml", ".ico": "image/x-icon", ".txt": "text/plain", ".pdf": "application/pdf"}
@@ -49,6 +50,20 @@ _capture_locks = defaultdict(threading.Lock)
 def _lock_for(path):
     with _locks_guard:
         return _capture_locks[str(path)]
+
+
+def site_file(sub):
+    """Path of a file under site/ for the URL part `sub`, or None. Refuses anything that would
+    leave the site folder (.. segments, backslashes), so only published files can be read."""
+    rel = sub.lstrip("/")
+    if not rel or "\\" in rel or "\x00" in rel or any(part in ("..", ".") for part in rel.split("/")):
+        return None
+    cand = (ROOT / rel).resolve()
+    try:
+        cand.relative_to(ROOT)
+    except ValueError:
+        return None
+    return cand if cand.is_file() else None
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -71,7 +86,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not m:
             return self._404()
         sub = m.group(2) or ""
-        if not sub.startswith("/"):
+        if not sub.startswith("/") or ".." in sub.split("/"):
             return self._404()
         if sub == "/logout":            # makes the browser forget the site login (see index.html)
             body = b"Logged out"
@@ -82,13 +97,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
-        candidate = ROOT / sub.lstrip("/")
-        if candidate.is_file():
-            return self._serve_file(candidate)
+        fp = site_file(sub)
+        if fp:
+            return self._serve_file(fp)
         if sub.startswith("/pages/"):
-            page_file = ROOT / "pages" / (sub[len("/pages/"):] + ".html")
-            if page_file.is_file():
-                return self._serve_file(page_file)
+            fp = site_file("/pages/" + sub[len("/pages/"):] + ".html")
+            if fp:
+                return self._serve_file(fp)
         last_segment = sub.rsplit("/", 1)[-1]
         if "." in last_segment and last_segment.rsplit(".", 1)[-1].lower() not in ("html", "htm"):
             return self._404()
@@ -102,6 +117,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not sub.startswith("/"):
             return self._404()
         endpoint = sub[1:]
+        if not ENDPOINT_RE.match(endpoint):
+            return self._404()
         body = b""
         if "Content-Length" in self.headers:
             try:
