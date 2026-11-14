@@ -46,6 +46,16 @@
         /* light-magenta theme (overrides the palette in css/style.css) */
         html:root { --bg: #F9DDF4; --bg-panel: #FDF1FB; --nav-bg: #FDF1FB; --border: #EBC3E2;
                     --accent: #A12C8C; --accent-glow: #C95BB4; }
+        /* drop-down menu in the top bar */
+        nav .links { align-items: center; flex-wrap: wrap; row-gap: .4em; }
+        nav .menu { position: relative; margin-left: 1.5em; }
+        nav .menu-btn { background: none; border: 0; padding: 0; font: inherit; color: var(--fg); cursor: pointer; }
+        nav .menu-btn:hover, nav .menu-btn[aria-expanded="true"] { color: var(--accent-glow); }
+        nav .menu-list { position: absolute; top: calc(100% + .6em); left: 0; min-width: 15em; z-index: 200;
+                         background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: .35em 0;
+                         box-shadow: 0 6px 18px rgba(0, 0, 0, .14); }
+        nav .menu-list a { display: block; margin: 0; padding: .5em 1em; white-space: nowrap; }
+        nav .menu-list a:hover, nav .menu-list a:focus { background: var(--bg-panel); color: var(--accent); outline: none; }
     </style>
 </head>
 
@@ -53,8 +63,18 @@
     <nav>
         <div class="logo"><a href="" data-route="/">PromptGate AI</a></div>
         <div class="links">
-            <a href="gateway">Prompt Study</a>
-            <a href="detector">Live Detector</a>
+            <a href="gateway" data-path="/gateway">Prompt Study</a>
+            <a href="detector" data-path="/detector">Live Detector</a>
+            <div class="menu" id="admin-menu">
+                <button type="button" class="menu-btn" aria-haspopup="true" aria-expanded="false" aria-controls="admin-menu-list">Admin <span aria-hidden="true">&#9662;</span></button>
+                <div class="menu-list" id="admin-menu-list" hidden>
+                    <a href="admin#overview" data-path="/admin#overview">Overview</a>
+                    <a href="admin#models" data-path="/admin#models">Update models</a>
+                    <a href="admin#rollback" data-path="/admin#rollback">Roll back models</a>
+                    <a href="admin#pool" data-path="/admin#pool">Prompt pool and quantity</a>
+                    <a href="admin#agents" data-path="/admin#agents">Run the agents</a>
+                </div>
+            </div>
             <a href="#" id="logout-link">Log out</a>
         </div>
     </nav>
@@ -67,15 +87,36 @@
         <p>© 2026 PromptGate AI · University of North Dakota research study</p>
     </footer>
     <script>
+        // Top-bar links always point at this visitor's link token, and the Admin menu opens on click.
+        (function () {
+            var base = "/" + (location.pathname.split("/")[1] || "HOME");
+            document.querySelectorAll("nav a[data-path]").forEach(function (a) { a.setAttribute("href", base + a.getAttribute("data-path")); });
+            var menu = document.getElementById("admin-menu"), btn = menu.querySelector(".menu-btn"), list = menu.querySelector(".menu-list");
+            function setOpen(open) { list.hidden = !open; btn.setAttribute("aria-expanded", open ? "true" : "false"); }
+            btn.addEventListener("click", function (e) { e.stopPropagation(); setOpen(list.hidden); if (!list.hidden) list.querySelector("a").focus(); });
+            list.addEventListener("click", function () { setOpen(false); });
+            document.addEventListener("click", function (e) { if (!menu.contains(e.target)) setOpen(false); });
+            document.addEventListener("keydown", function (e) {
+                if (list.hidden) return;
+                var items = Array.prototype.slice.call(list.querySelectorAll("a")), i = items.indexOf(document.activeElement);
+                if (e.key === "Escape") { setOpen(false); btn.focus(); }
+                else if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length].focus(); }
+                else if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
+            });
+        })();
+    </script>
+    <script>
         // Log out: the site uses the browser's built-in login, which has no logout of its own.
         // Sending a request with throwaway credentials to /logout (always answers 401) makes the
-        // browser drop the saved login; then return to the open home page.
+        // browser drop the saved login; then return to the open home page. An admin sign-in, if
+        // there is one, is ended too.
         document.addEventListener("click", function (e) {
             var a = e.target.closest && e.target.closest("#logout-link");
             if (!a) return;
             e.preventDefault();
             var base = "/" + (location.pathname.split("/")[1] || "HOME");
             var done = function () { location.href = base + "/?loggedout=1"; };
+            try { fetch(base + "/admin/logout", { method: "POST", credentials: "same-origin", keepalive: true }); } catch (err) { /* best effort */ }
             try {
                 var x = new XMLHttpRequest();
                 x.open("GET", base + "/logout", true, "logout", "x" + Date.now());
