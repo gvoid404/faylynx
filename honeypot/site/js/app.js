@@ -75,16 +75,13 @@ document.addEventListener("click", e => {
     const newUrl = VERSION_PREFIX + route;
 
     history.pushState({ path: route }, "", newUrl);
-    lastPathname = location.pathname;
     loadPage(route);
 });
 
 // --- Browser back/forward buttons ---
-let lastPathname = location.pathname;
 window.addEventListener("popstate", e => {
-    if (location.pathname === lastPathname) return;    // only the #section changed (Admin tabs)
-    lastPathname = location.pathname;
-    loadPage(e.state?.path || location.pathname);
+    const path = e.state?.path || "/";
+    loadPage(path);
 });
 
 // --- Initial page load ---
