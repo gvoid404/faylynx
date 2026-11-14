@@ -15,26 +15,16 @@ project on Shadow AI (George Clemons; advisor Dr. Jielun Zhang). It is built on 
 browsing-agent honeypot, which is kept in this repository and credited
 [below](#the-original-browsing-agent-honeypot-ic3-lab).
 
-## Status
-
-**In place now**
+## What is in place
 
 - The site: a home page, a **Prompt Study** page and a **Live Detector** page, with a study login
-  in front of the last two.
+  in front of the last two, and an **Admin** page with its own password.
 - A fixed pool of 160 prompts, and a participant workbook with each participant's link and 12
-  assigned prompts.
+  assigned prompts. Participants can choose how many prompts they enter.
 - An agent driver that enters prompts into the site from a laptop.
-- Two models, one for content and one for behavior, trained before any study data was collected,
-  and a script that scores and retrains them once data has been collected.
-
-**Planned, coming later**
-
-- A security fix for the web server.
-- An admin page with its own password, added to the menu, with drop-down menus where needed.
-- A link in the admin menu to run the model update on the AWS server instead of a laptop.
-- Admin controls to roll back model updates by date, or all the way back to the beginning.
-- A prompt quantity that the user can select. Today every participant enters 12.
-- A further update of this README when those changes are in.
+- Two models, one for content and one for behavior, trained before any study data was collected.
+- Model updates that run on the server from the Admin page, with every version kept and a
+  rollback to any date or all the way back to the original models.
 
 ## Contents
 
@@ -43,10 +33,10 @@ browsing-agent honeypot, which is kept in this repository and credited
 - [Run it on your own computer](#run-it-on-your-own-computer)
 - [Prompt Study page](#prompt-study-page)
 - [Live Detector page](#live-detector-page)
+- [Admin page](#admin-page)
 - [Prompt pool: size and source](#prompt-pool-size-and-source)
 - [Run the agents from a laptop](#run-the-agents-from-a-laptop)
 - [What is recorded](#what-is-recorded)
-- [Refine the models after collecting data](#refine-the-models-after-collecting-data)
 - [The models](#the-models)
 - [The server](#the-server)
 - [Login and privacy](#login-and-privacy)
@@ -63,37 +53,46 @@ and anything else (for example `HOME`) is a test link. Tokens are 1 to 32 charac
 | Page | Address | Who can open it | What it does |
 |---|---|---|---|
 | Home | `/HOME/` | anyone | Two cards that lead to the study and the detector. |
-| Prompt Study | `/<TOKEN>/gateway` | study login | A participant types 12 prompts from the prompt pool; each one is recorded with its typing and mouse behavior. |
+| Prompt Study | `/<TOKEN>/gateway` | study login | A participant types prompts from the prompt pool; each one is recorded with its typing and mouse behavior. |
 | Live Detector | `/<TOKEN>/detector` | study login | Type or paste any prompt and see the category the gateway assigns, with the two parts of the decision shown separately. |
+| Admin | `/<TOKEN>/admin` | admin password | Overview of the collected data, model updates run on the server, model rollback, prompt quantity settings. |
 
-The top menu is: Prompt Study, Live Detector, Log out.
+The top menu is: Prompt Study, Live Detector, Admin (a drop-down with Overview, Update models,
+Roll back models, Prompt quantity) and Log out.
 
 ## Repository layout
 
 ```
 honeypot/
   server_plus.py          the PromptGate web server (Python standard library only)
+  admin.py                admin back end: password, sign-in, overview, model-update job, settings
+  model_registry.py       model versions: store, activate, roll back
   inference.py            scores both models in plain Python and applies the category rule
   behavioral_features.py  turns key and mouse events into behavior features
-  models/                 the models the Live Detector uses (content_model.json, actor_model.json)
+  models/                 the original models (content_model.json, actor_model.json)
   server.py               the lab's original server (six-task honeypot only)
   site/                   the single-page site
     index.html, js/app.js, js/script.js (site-wide tracker), js/recorder.js (per-prompt recorder)
-    pages/home.html, gateway.html, detector.html and js/pages/*.js
+    pages/home.html, gateway.html, detector.html, admin.html and js/pages/*.js
     pages/forums, flights, shop, careers, sort, game    the six original honeypot tasks
     prompt_bank.json      the prompt pool the study page reads
 study/
-  STUDY_GUIDE.md              step-by-step notes for collecting data and refining the models
+  STUDY_GUIDE.md              step-by-step notes for updating the server and collecting data
   prompt_bank.json            the prompt pool (same file as honeypot/site/prompt_bank.json)
   PromptGate_prompt_sheet.xlsx  participant workbook: links, assigned prompts, progress
   sim_gateway.py              agent driver (run on a laptop)
-  refine_models.py            scores the models on collected data and retrains them (run on a laptop)
+  refine_models.py            scores the models on collected data and retrains them (run by Admin)
   train_and_export.py         trains both models and writes them as JSON
-  inference.py, behavioral_features.py, models/    copies used by the study scripts
+  build_base_corpus.py        packs the private training corpus
+  server_setup_training.sh    one-time install of the training tools on the server
+  inference.py, behavioral_features.py, models/    earlier copies, no longer used by the scripts
   protect_site.sh             sets, changes or removes the study login
   sim_sessions.py, results/   scripted sessions and their features (training data of the behavior model)
 agent/, patches/              the lab's LLM browsing-agent runner and Skyvern patch
 captures/                     collected data, created at run time (never committed)
+runtime/                      server-local state, created at run time (never committed):
+                              admin password hash, settings, model versions, training tools,
+                              private training corpus
 ```
 
 ## Run it on your own computer
@@ -106,21 +105,36 @@ cd faylynx
 python3 honeypot/server_plus.py 8781 127.0.0.1
 ```
 
-Open <http://127.0.0.1:8781/HOME/>. There is no study login on a local copy; that login is added
-by the web front end on the server (see [The server](#the-server)).
+Open <http://127.0.0.1:8781/HOME/>. To use the Admin page, set its password first:
+
+```bash
+python3 honeypot/admin.py set-password
+```
+
+There is no study login on a local copy; that login is added by the web front end on the server
+(see [The server](#the-server)).
 
 ## Prompt Study page
 
 1. The participant opens their link, for example `https://<site>/P07/gateway`, and signs in with
    the study username and password.
-2. The consent card explains what is recorded. The participant ticks the box and presses Start.
-3. Each of the 12 prompts is shown on screen. The participant types it by hand. Shadow AI prompts
-   also come with made-up data to paste in after the typed part. Send, then Next.
+2. The consent card explains what is recorded. The participant ticks the box, chooses how many
+   prompts to enter, and presses Start.
+3. Each prompt is shown on screen. The participant types it by hand. Shadow AI prompts also come
+   with made-up data to paste in after the typed part. Send, then Next.
 4. On a participant link, reloading the page continues where the participant left off.
 
-Participants `P01` to `P20` get their 12 assigned prompts: 6 Allow and 6 Shadow AI, alternating.
-Every Allow and Shadow AI prompt is assigned to exactly 2 people. Any other link token gets a
-random 6 Allow and 6 Shadow AI prompts.
+**How many prompts.** The quantity is selectable in two places:
+
+- The participant picks a number on the consent card (when the admin allows it).
+- The admin sets the default, the fewest and the most on **Admin > Prompt quantity**, and can turn
+  the participant's choice off. The shipped settings are default 12, fewest 2, most 40. The most
+  can be at most 120, the number of Allow and Shadow AI prompts in the pool.
+
+Participants `P01` to `P20` always start with their 12 assigned prompts: 6 Allow and 6 Shadow AI,
+alternating. Every Allow and Shadow AI prompt is assigned to exactly 2 people. A larger number
+continues with more prompts from the pool in an order that is fixed for that participant; a
+smaller number stops early. Any other link token gets a random draw.
 
 `study/PromptGate_prompt_sheet.xlsx` lists each participant's link and assigned prompts and tracks
 progress.
@@ -136,6 +150,90 @@ The category rule, applied in this order:
 1. Content model says Shadow AI: **Shadow AI**.
 2. Content model says Automated, or the behavior model says automated: **Automated AI Pipeline**.
 3. Otherwise: **Allow**.
+
+## Admin page
+
+The Admin page has its own password, separate from the study login.
+
+**Set or change the admin password** on the server (it is never set over the web):
+
+```bash
+cd ~/browsing-agent-honeypot && python3 honeypot/admin.py set-password
+```
+
+The password needs at least 8 characters. Changing it signs everyone out of the Admin page. Five
+wrong passwords lock sign-in from that address for 15 minutes. A sign-in lasts 8 hours, and the
+Log out link in the menu ends it.
+
+### Overview
+
+Counts of participants with entries, prompts entered by people and by agents, Live Detector uses
+and feedback clicks, entries from test links, a per-participant table, and which models are in use.
+
+### Update models
+
+**Admin > Update models > Run model update** runs the update on the server. Nothing has to be
+copied to or from a laptop. The job:
+
+1. scores the models now in use on everything participants and agents have entered,
+2. estimates how the retrained models will do, with participants held out for the behavior model
+   and prompts held out for the content model,
+3. retrains on all of it and stores the result as a new version.
+
+With the box "Use the new version as soon as it finishes" ticked, the Live Detector switches to the
+new version at once. Without it, the version is stored and can be switched on later. The page
+shows a before and after table and keeps the earlier versions. An update needs at least 20 usable
+entries; with fewer it stops and says so.
+
+One-time setup on the server (about 5 minutes, needs about 1.5 GB of free disk space):
+
+```bash
+cd ~/browsing-agent-honeypot && bash study/server_setup_training.sh
+```
+
+This installs scikit-learn, pandas and xgboost into `runtime/venv`, apart from the system Python.
+In testing on a 2-CPU machine, an update of both models took about 40 seconds and an update of the
+behavior model alone a few seconds. Allow about 1 GB of free memory for an update of both models.
+
+Until the private training corpus is on the server, an update retrains the **behavior model
+only** and carries the content model over. To retrain the content model as well, copy the corpus
+to the server once:
+
+```powershell
+scp -i YOUR-KEY base_corpus.jsonl.gz ubuntu@YOUR-SERVER:browsing-agent-honeypot/runtime/
+```
+
+The Admin page says which of the two cases applies before you press the button. The corpus is
+built from the project's labeled data with `study/build_base_corpus.py`. It holds third-party
+dataset text and must stay out of this repository (`.gitignore` blocks it).
+
+### Roll back models
+
+**Admin > Roll back models** offers three ways back, each with a second click to confirm:
+
+- **Roll back to this date**: pick a day; the newest version made on or before that day is used.
+  If no update is that old, the original models are used.
+- **Restore the original models**: all the way back to the models shipped in this repository.
+- **Use this version**: on any row of the version table.
+
+A rollback takes effect on the next request. Nothing is deleted, so any version can be switched on
+again, and the page keeps a list of recent changes. The same from the command line on the server:
+
+```bash
+python3 honeypot/model_registry.py list
+python3 honeypot/model_registry.py rollback-to 2026-11-20
+python3 honeypot/model_registry.py activate baseline
+python3 honeypot/model_registry.py activate 20261120-153000
+```
+
+Versions are stored in `runtime/models/versions/<date-time>/`; `git pull` never touches them. A
+version's name is the date and time it was made in UTC, so late in the day it can show the next
+day's date; the Admin page shows local times.
+
+### Prompt quantity
+
+The quantity settings described [above](#prompt-study-page), and how many pool prompts people and
+agents have entered so far.
 
 ## Prompt pool: size and source
 
@@ -220,6 +318,7 @@ not tied together.
 | `evasive_bot` | types with random variation and moves the mouse, trying to look like a person |
 
 Each session is also listed in `agent_manifest.jsonl` in the folder the driver was started from.
+The entries show up on **Admin > Overview**, and **Admin > Update models** can use them.
 
 ## What is recorded
 
@@ -228,9 +327,9 @@ set of files per link token:
 
 | File | One line per | Holds |
 |---|---|---|
-| `<TOKEN>_prompt.jsonl` | prompt sent | entered text, prompt id and category, the key and mouse events for that prompt, time taken |
-| `<TOKEN>_consent.jsonl` | consent click | time |
-| `<TOKEN>_classify.jsonl` | Live Detector use | prompt, events, and the answer the models gave |
+| `<TOKEN>_prompt.jsonl` | prompt sent | entered text, prompt id and category, the key and mouse events for that prompt, chosen quantity, time taken |
+| `<TOKEN>_consent.jsonl` | consent click | time, chosen quantity |
+| `<TOKEN>_classify.jsonl` | Live Detector use | prompt, events, and the answer the models gave (with the model version) |
 | `<TOKEN>_feedback.jsonl` | detector feedback click | what the visitor said the prompt really was |
 | `<TOKEN>_end.jsonl` | finished session | which page was completed |
 | `<TOKEN>_mm.jsonl` | half-second batch | the site-wide event stream (backup) |
@@ -243,28 +342,6 @@ Copy the data to a laptop for analysis or backup:
 ```powershell
 scp -r -i YOUR-KEY ubuntu@YOUR-SERVER:browsing-agent-honeypot/captures captures_live
 ```
-
-## Refine the models after collecting data
-
-For now this is done on a laptop. It needs the project's labeled data folder
-(`paper2-three-class`), which is not in this repository because it contains third-party dataset
-text. Work in the `study` folder: copy the captures into it with the command above, then run:
-
-```powershell
-python -m pip install scikit-learn xgboost pandas
-python refine_models.py --captures captures_live --p2 PATH\paper2-three-class --out new_models
-scp -i YOUR-KEY new_models\content_model.json new_models\actor_model.json ubuntu@YOUR-SERVER:browsing-agent-honeypot/honeypot/models/
-```
-
-`refine_models.py`:
-
-1. scores the current models on everything participants and agents have entered,
-2. estimates how the retrained models will do, with participants held out for the behavior model
-   and prompts held out for the content model,
-3. retrains on all of it and writes the two model files, plus `refine_report.json`.
-
-The Live Detector picks up the new model files on its own; no restart is needed. Keep a copy of
-the two files in `honeypot/models/` before replacing them, so that an update can be undone.
 
 ## The models
 
@@ -305,7 +382,19 @@ Update the server after a change in this repository:
 cd ~/browsing-agent-honeypot && git pull --ff-only && sudo systemctl restart honeypot && systemctl is-active honeypot
 ```
 
-It should print `active`. Collected data is in `captures/`, which `git pull` does not touch.
+It should print `active`. Restarting signs admins out and stops a model update that is running.
+Collected data, model versions, settings and passwords are in `captures/` and `runtime/`, which
+`git pull` does not touch.
+
+On a new server, after the service and Caddy are set up as below, set the study login, the admin
+password and the training tools:
+
+```bash
+cd ~/browsing-agent-honeypot
+bash study/protect_site.sh
+python3 honeypot/admin.py set-password
+bash study/server_setup_training.sh
+```
 
 The service definition (`/etc/systemd/system/honeypot.service`):
 
@@ -343,13 +432,18 @@ your.host.name {
   addresses they send data to need a username and password. The home page is open. Set or change
   the login on the server with `bash study/protect_site.sh`; `bash study/protect_site.sh --remove`
   takes it off. The Log out link in the menu makes the browser forget the login.
+- **Admin password.** The Admin page's data and actions need the admin password
+  (`python3 honeypot/admin.py set-password`). It is stored only as a salted PBKDF2-SHA256 hash in
+  `runtime/admin_auth.json`, and admin requests are not written to the capture files.
+- **Files.** The web server only serves files inside `honeypot/site/`, and the addresses that
+  accept data are single plain words. Collected data is read over SSH, not through the site.
 - **What is recorded.** The site records what visitors type on the study and detector pages, their
   typing and mouse behavior, and their network address. The study page shows a consent notice
   first, uses only made-up sensitive data, and asks participants not to enter real personal or
   confidential information. Do not invite participants before the approvals your institution
   requires are in place.
-- **Keep the data private.** `captures/` is listed in `.gitignore`. Keep it, and the project's
-  labeled data, out of any public place.
+- **Keep the data private.** `captures/` and `runtime/` are listed in `.gitignore`. Keep them, and
+  the project's labeled data and training corpus, out of any public place.
 
 ## The original browsing-agent honeypot (IC3 Lab)
 

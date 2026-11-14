@@ -1,29 +1,32 @@
 #!/usr/bin/env python3
-"""Honeypot server (capture-plus) — drop-in replacement for server.py that additionally records
-a lightweight network/connection fingerprint on every POST, for the API-surface path of the study.
+"""PromptGate AI web server (capture-plus). Standard library only.
 
-Same routes and capture files as server.py:
-  GET  /<VERSION>/...          serve files from site/
-  POST /<VERSION>/<endpoint>   append to captures/<VERSION>_<endpoint>.jsonl
+Routes (every address starts with a link token, /<TOKEN>/..., TOKEN = [A-Z0-9_-]{1,32})
+  GET  /<TOKEN>/...                 pages and files from site/ (single-page app fallback)
+  GET  /<TOKEN>/study_config        how many prompts the study page offers (set on the Admin page)
+  GET  /<TOKEN>/logout              answers 401 so the browser forgets the site login
+  POST /<TOKEN>/<endpoint>          append the request to captures/<TOKEN>_<endpoint>.jsonl
+                                    (mm, prompt, consent, end, feedback, ...)
+  POST /<TOKEN>/classify            Live Detector: run the active models, log input + answer
+  GET|POST /<TOKEN>/admin/...       admin sign-in and admin API (see admin.py)
 
-Added to each capture record (best effort; empty when not present):
-  client_ip, and from the request headers: User-Agent, Accept-Language, Accept-Encoding, Accept,
-  Connection, and the Client Hints Sec-CH-UA* . When the server runs behind a TLS terminator
-  (Caddy) that forwards TLS details, any X-TLS-* and X-Forwarded-* headers are captured too — see
-  the deploy runbook for the Caddy config that adds X-TLS-Version / X-TLS-Cipher / X-JA4 headers.
+Each capture record also holds a lightweight network fingerprint: client IP and the request
+headers User-Agent, Accept-*, Client Hints, plus X-TLS-* / X-Forwarded-* when Caddy forwards them.
 
 Usage:  python server_plus.py [port] [bind]        default: 8781 127.0.0.1
 """
 import http.server
 import json
-import uuid
 import re
 import socketserver
 import sys
 import threading
-sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent))
+import uuid
 from collections import defaultdict
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import admin
 
 HERE = Path(__file__).resolve().parent
 ROOT = (HERE / "site").resolve()
@@ -40,7 +43,7 @@ MIME = {".html": "text/html", ".css": "text/css", ".js": "application/javascript
 NET_HEADERS = ["User-Agent", "Accept-Language", "Accept-Encoding", "Accept", "Connection",
                "Sec-CH-UA", "Sec-CH-UA-Mobile", "Sec-CH-UA-Platform", "Sec-CH-UA-Platform-Version",
                "Sec-Fetch-Site", "Sec-Fetch-Mode", "DNT",
-               # forwarded by Caddy when deployed behind TLS (see runbook):
+               # forwarded by Caddy when deployed behind TLS:
                "X-Forwarded-For", "X-Forwarded-Proto", "X-TLS-Version", "X-TLS-Cipher", "X-JA4", "X-JA3"]
 
 _locks_guard = threading.Lock()
@@ -68,7 +71,7 @@ def site_file(sub):
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
-        sys.stderr.write(f"[{self.command}] {self.path} -> {args[1]}\n")
+        sys.stderr.write(f"[{self.command}] {self.path.split('?')[0]} -> {args[1]}\n")
 
     def _net(self):
         fp = {}
@@ -81,6 +84,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
         fp["client_ip"] = (xff.split(",")[0].strip() if xff else self.client_address[0])
         return fp
 
+    def _json(self, code, obj, extra=()):
+        out = json.dumps(obj).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(out)))
+        for k, v in extra:
+            self.send_header(k, v)
+        self.end_headers()
+        self.wfile.write(out)
+
     def do_GET(self):
         m = VERSION_RE.match(self.path.split("?")[0])
         if not m:
@@ -88,6 +102,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
         sub = m.group(2) or ""
         if not sub.startswith("/") or ".." in sub.split("/"):
             return self._404()
+        if sub.startswith("/admin/api/"):
+            return admin.handle(self, "GET", sub)
+        if sub == "/study_config":
+            return self._json(200, admin.public_study_config())
         if sub == "/logout":            # makes the browser forget the site login (see index.html)
             body = b"Logged out"
             self.send_response(401)
@@ -116,6 +134,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         version, sub = m.group(1), m.group(2) or ""
         if not sub.startswith("/"):
             return self._404()
+        if sub.startswith("/admin/"):   # handled separately: admin requests are never written to captures
+            return admin.handle(self, "POST", sub)
         endpoint = sub[1:]
         if not ENDPOINT_RE.match(endpoint):
             return self._404()
@@ -188,6 +208,6 @@ if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8781
     bind = sys.argv[2] if len(sys.argv) > 2 else "127.0.0.1"
     with Server((bind, port), Handler) as srv:
-        print(f"Honeypot (capture-plus) on http://{bind}:{port}/<VERSION>/")
+        print(f"PromptGate AI (capture-plus) on http://{bind}:{port}/<TOKEN>/")
         print(f"Captures: {CAPTURE_DIR}")
         srv.serve_forever()
