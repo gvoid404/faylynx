@@ -187,6 +187,8 @@ cd ~/browsing-agent-honeypot && bash study/server_setup_training.sh
 ```
 
 This installs scikit-learn, pandas and xgboost into `runtime/venv`, apart from the system Python.
+In testing on a 2-CPU machine, an update of both models took about 40 seconds and an update of the
+behavior model alone a few seconds. Allow about 1 GB of free memory for an update of both models.
 
 Until the private training corpus is on the server, an update retrains the **behavior model
 only** and carries the content model over. To retrain the content model as well, copy the corpus

@@ -19,7 +19,11 @@ mkdir -p "$REPO/runtime"
 echo ">>> installing scikit-learn, pandas and xgboost (a few minutes) ..."
 "$VENV/bin/pip" install --quiet --upgrade pip
 "$VENV/bin/pip" install --quiet scikit-learn pandas
-# xgboost-cpu is the small CPU-only build; fall back to the full package where it is not offered
-"$VENV/bin/pip" install --quiet xgboost-cpu || "$VENV/bin/pip" install --quiet xgboost
+# xgboost-cpu is the small CPU-only build. It is not offered for every machine type (for example
+# ARM servers); the standard package is used there instead.
+if ! "$VENV/bin/pip" install --quiet xgboost-cpu 2>/dev/null; then
+  echo ">>> the small xgboost build is not offered for this machine; installing the standard one ..."
+  "$VENV/bin/pip" install --quiet xgboost
+fi
 "$VENV/bin/python" -c "import sklearn, xgboost, pandas; print('Training tools ready: scikit-learn', sklearn.__version__, '| xgboost', xgboost.__version__)"
 echo "Done. Open Admin > Update models on the site; it will now offer 'Run model update'."
