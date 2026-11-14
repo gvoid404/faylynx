@@ -1,17 +1,4 @@
-# collected data (prompt entries, behavior events, IP addresses): never commit
 captures/
 captures_live/
-
-# server-local state: admin password hash, settings, model versions, training environment,
-# private training corpus
-runtime/
-base_corpus*.jsonl*
-
-# local outputs of the study tools
 __pycache__/
 refine_tmp/
-refine_report.json
-models_refined/
-agent_manifest.jsonl
-.env
-.venv/

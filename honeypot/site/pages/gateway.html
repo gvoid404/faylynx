@@ -18,9 +18,6 @@
   .gw-link{background:none;border:0;color:#6b6b76;cursor:pointer;text-decoration:underline;font:inherit}
   .gw-type{font-size:1.05rem;font-weight:600;user-select:none;-webkit-user-select:none}
   .gw-pid{float:right;font-family:monospace}
-  .gw-qty{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin:.2rem 0 1rem}
-  .gw-qty select{padding:.35rem .5rem;border:1px solid #c9c9d2;border-radius:8px;font:inherit;background:#fff}
-  .gw-qty-note{color:#6b6b76;font-size:.9rem}
   .gw-consent-check{display:flex;gap:.5rem;align-items:center;margin:1rem 0}
 </style>
 <section id="gateway" class="gateway-view">
@@ -36,18 +33,13 @@
       <li><strong>how</strong> you type and move the mouse (timing and movement, not screen contents elsewhere),</li>
       <li>basic connection information (browser type, language, and IP address).</li>
     </ul>
-    <p>You will be asked to type a short list of prompts that we give you (you choose how many below). Some include <strong>made-up,
+    <p>You will be asked to type a short list of prompts that we give you. Some include <strong>made-up,
       fictional</strong> business data that we provide for you to paste. <strong>Please do not enter any real
       personal, financial, or confidential information.</strong> Taking part is voluntary; you may
       close the page at any time. Data is used only for research and reported in aggregate.</p>
     <label class="gw-consent-check">
       <input type="checkbox" id="gw-agree" /> I am 18 or older and I agree to take part.
     </label>
-    <div class="gw-qty" id="gw-qty-wrap" hidden>
-      <label for="gw-qty">How many prompts would you like to enter?</label>
-      <select id="gw-qty"></select>
-      <span class="gw-qty-note" id="gw-qty-note"></span>
-    </div>
     <div class="gw-actions">
       <button type="button" id="gw-start" class="gw-btn" disabled>Start</button>
     </div>

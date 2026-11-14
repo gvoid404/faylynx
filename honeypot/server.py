@@ -59,8 +59,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not m:
             return self._404()
         sub = m.group(2) or ""
-        if not sub.startswith("/") or ".." in sub.split("/") or "\\" in sub:
-            return self._404()      # never serve anything outside site/
+        if not sub.startswith("/"):
+            return self._404()
 
         candidate = ROOT / sub.lstrip("/")
         if candidate.is_file():
@@ -85,8 +85,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not sub.startswith("/"):
             return self._404()
         endpoint = sub[1:]
-        if not re.fullmatch(r"[A-Za-z0-9_]{1,32}", endpoint):
-            return self._404()      # capture endpoints are single plain words
 
         body = b""
         if "Content-Length" in self.headers:

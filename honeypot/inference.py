@@ -1,26 +1,22 @@
 #!/usr/bin/env python3
 """Stdlib-only inference for the live detector: content class from prompt text (TF-IDF + LR
 exported to JSON), actor (human vs automated) from the typing/mouse events (XGBoost trees exported
-to JSON), and the fused gateway category. No numpy/sklearn needed on the server.
-Model files come from the active version in model_registry.py (the baseline or an update)."""
+to JSON), and the fused gateway category. No numpy/sklearn needed on the server."""
 import json, math, os, re, struct, tempfile
 from pathlib import Path
 import behavioral_features as bf
 
-import model_registry as registry
-
 HERE = Path(__file__).resolve().parent
+MODELS = HERE / "models"
 TOKEN_RE = re.compile(r"(?u)\b\w\w+\b")
 _cache = {}
 
 
 def _load(name):
-    """Model file of the ACTIVE version (see model_registry.py); reloaded when the version changes."""
-    p = registry.active_dir() / name
+    p = MODELS / name
     mt = p.stat().st_mtime
-    hit = _cache.get(name)
-    if not hit or hit[0] != (str(p), mt):
-        _cache[name] = ((str(p), mt), json.load(open(p, encoding="utf-8")))
+    if name not in _cache or _cache[name][0] != mt:      # hot-reload when the file is replaced
+        _cache[name] = (mt, json.load(open(p, encoding="utf-8")))
     return _cache[name][1]
 
 
@@ -105,5 +101,4 @@ def analyze(prompt, events):
             "content_probs": {k: round(v, 3) for k, v in probs.items()},
             "actor": actor, "p_automated": None if p_agent is None else round(p_agent, 3),
             "behavior": None if not x else {k: (None if v is None else round(v, 3)) for k, v in x.items()},
-            "models": {"version": registry.active_id(), "content": _load("content_model.json").get("tag"),
-                       "actor": _load("actor_model.json").get("tag")}}
+            "models": {"content": _load("content_model.json").get("tag"), "actor": _load("actor_model.json").get("tag")}}
