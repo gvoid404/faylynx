@@ -82,3 +82,6 @@ current models on the collected data, estimates the retrained models with partic
 held out, retrains, and saves the result as a new version. **Admin > Roll back models** goes back to
 any earlier version, to a date, or to the original models. The one-time setup is in the README
 (Admin page). Do not copy model files into `honeypot/models/` by hand any more.
+
+**Admin > Model accuracy** shows the accuracy of the models in use as a bar chart and the accuracy
+of every model version as a line chart, and saves both as a PDF.

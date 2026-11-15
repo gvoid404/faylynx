@@ -7,6 +7,8 @@
     model version and (optionally) makes it active
   * rollback: activate any earlier version, the newest one before a date, or the original models
   * the study settings (how many prompts a participant enters)
+  * model accuracy: a bar chart of the models in use, a line chart across model versions, and the
+    same as a PDF (accuracy.py, charts.py)
 
 Set or change the admin password on the server (it is never sent over the web to set it):
   python3 honeypot/admin.py set-password
@@ -14,8 +16,10 @@ Set or change the admin password on the server (it is never sent over the web to
 import getpass, hashlib, hmac, json, os, re, secrets, subprocess, sys, threading, time
 from http.cookies import SimpleCookie
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import accuracy, charts
 import model_registry as reg
 
 HERE = Path(__file__).resolve().parent
@@ -132,6 +136,28 @@ def _send(h, code, obj, extra_headers=()):
         h.send_header(k, v)
     h.end_headers()
     h.wfile.write(out)
+
+
+def _send_file(h, data, content_type, filename):
+    """Send bytes as a download."""
+    h.send_response(200)
+    h.send_header("Content-Type", content_type)
+    h.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+    h.send_header("Cache-Control", "no-store")
+    h.send_header("X-Content-Type-Options", "nosniff")
+    h.send_header("Content-Length", str(len(data)))
+    h.end_headers()
+    h.wfile.write(data)
+
+
+def _tz_minutes(h):
+    """The reader's offset from UTC in minutes, sent by the page as ?tz=..., so that dates read in
+    their own time. None when it is missing or not a real offset."""
+    try:
+        v = int(parse_qs(urlsplit(h.path).query).get("tz", [""])[0])
+    except ValueError:
+        return None
+    return v if -14 * 60 <= v <= 14 * 60 else None
 
 
 def _body(h, limit=20_000):
@@ -300,6 +326,20 @@ def pool_report():
             "agent_pool_size": sum(bank_counts().values()), "settings": get_settings()}
 
 
+# ------------------------------------------------------------------ model accuracy
+def accuracy_page(tz_minutes):
+    """What Admin > Model accuracy shows: the figures, the two charts as SVG and the notes."""
+    rep = accuracy.report(tz_minutes)
+    return {"report": rep, "charts": charts.page_charts(rep), "notes": charts.chart_notes(rep),
+            "detail": charts.detail_rows(rep["current"]), "in_use": charts.in_use_text(rep["current"])}
+
+
+def accuracy_pdf(tz_minutes):
+    """The same as a one-page PDF. Returns (bytes, file name)."""
+    rep = accuracy.report(tz_minutes)
+    return charts.build_pdf(rep), f"PromptGate_model_accuracy_{rep['generated_day']}.pdf"
+
+
 # ------------------------------------------------------------------ model update job
 def training_python():
     for cand in (os.environ.get("PROMPTGATE_TRAIN_PYTHON"), str(RUNTIME / "venv" / "bin" / "python")):
@@ -452,6 +492,10 @@ def _route(h, method, sub):
         if sub == "/admin/api/update/status": return _send(h, 200, update_status())
         if sub == "/admin/api/pool": return _send(h, 200, pool_report())
         if sub == "/admin/api/settings": return _send(h, 200, get_settings())
+        if sub == "/admin/api/accuracy": return _send(h, 200, accuracy_page(_tz_minutes(h)))
+        if sub == "/admin/api/accuracy.pdf":
+            data, name = accuracy_pdf(_tz_minutes(h))
+            return _send_file(h, data, "application/pdf", name)
         return _send(h, 404, {"error": "Unknown admin address."})
 
     body = _body(h)

@@ -14,18 +14,22 @@ TOKEN_RE = re.compile(r"(?u)\b\w\w+\b")
 _cache = {}
 
 
-def _load(name):
-    """Model file of the ACTIVE version (see model_registry.py); reloaded when the version changes."""
-    p = registry.active_dir() / name
+def _load(name, folder=None):
+    """Model file of the ACTIVE version (see model_registry.py), or of the version stored in
+    `folder` when one is given. A file is read again only when it has changed."""
+    p = (Path(folder) if folder else registry.active_dir()) / name
     mt = p.stat().st_mtime
-    hit = _cache.get(name)
-    if not hit or hit[0] != (str(p), mt):
-        _cache[name] = ((str(p), mt), json.load(open(p, encoding="utf-8")))
-    return _cache[name][1]
+    key = str(p)
+    hit = _cache.get(key)
+    if not hit or hit[0] != mt:
+        if len(_cache) > 8:                     # a handful of versions at most stay in memory
+            _cache.clear()
+        _cache[key] = (mt, json.load(open(p, encoding="utf-8")))
+    return _cache[key][1]
 
 
-def classify_content(text):
-    m = _load("content_model.json")
+def classify_content(text, folder=None):
+    m = _load("content_model.json", folder)
     toks = TOKEN_RE.findall(text.lower())
     grams = toks + [a + " " + b for a, b in zip(toks, toks[1:])]
     tf = {}
@@ -83,8 +87,8 @@ def behavior_features(events):
     return x
 
 
-def actor_prob(x):
-    m = _load("actor_model.json")
+def actor_prob(x, folder=None):
+    m = _load("actor_model.json", folder)
     margin = m.get("base_margin", 0.0) + sum(_tree(t, x) for t in m["trees"])
     return 1.0 / (1.0 + math.exp(-margin))
 

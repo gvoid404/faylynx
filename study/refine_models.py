@@ -11,6 +11,7 @@ Steps
   2. honest estimates for the refined models
        actor   - leave-participants-out (humans grouped by participant, agents by prompt id)
        content - leave-prompts-out (a prompt is never in both train and test)
+       both    - the final category from those two held-out predictions
   3. retrain on everything and write <out>/content_model.json + <out>/actor_model.json
 
 The Admin page runs this on the server (Admin > Model updates). By hand:
@@ -19,14 +20,15 @@ Without a training corpus use --actor-only: the behavior model is retrained and 
 is carried over unchanged.
 Exit code 3 means there is not enough collected data yet.
 """
-import argparse, difflib, json, re, shutil, subprocess, sys, time
+import argparse, json, shutil, subprocess, sys, time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-for cand in (HERE.parent / "honeypot", HERE):
-    if (cand / "inference.py").is_file():
-        sys.path.insert(0, str(cand)); break
+if not (HERE.parent / "honeypot" / "accuracy.py").is_file():
+    sys.exit("refine_models.py runs from a full copy of the repository: it needs the honeypot/ folder next to study/.")
+sys.path.insert(0, str(HERE.parent / "honeypot"))
 import inference as inf                      # noqa: E402  (stdlib-only scorer + feature extraction)
+import accuracy as acc                       # noqa: E402  (stdlib-only reader of the collected entries)
 
 HARD = ["inter_key_cv", "dwell_cv", "mouse_straightness", "prog_fill_ratio", "paste_to_type_ratio", "has_mouse", "has_typing"]
 CLASSES = ["Allow", "Shadow AI", "Automated AI Pipelines"]
@@ -36,45 +38,19 @@ def say(*a):
     print(*a, flush=True)
 
 
-def category(content, actor):
-    if content == "Shadow AI": return "Shadow AI"
-    if content == "Automated AI Pipelines" or actor == "agent": return "Automated AI Pipelines"
-    return "Allow"
-
-
-def actor_of(token):
-    if re.fullmatch(r"P\d{2}", token): return "human"
-    if token.startswith("AG-"): return "agent"
-    return None
+category = acc.category                       # the gateway's category rule, shared with the Admin page
 
 
 def load_rows(cap, bank):
-    import numpy as np, pandas as pd
-    byid = {p["id"]: p for p in bank["prompts"]}
-    rows = []
-    for fp in sorted(Path(cap).glob("*_prompt.jsonl")):
-        token = fp.name[:-len("_prompt.jsonl")]; actor = actor_of(token)
-        if actor is None:
-            continue
-        for line in open(fp, encoding="utf-8"):
-            if not line.strip(): continue
-            try:
-                rec = json.loads(line); b = json.loads(rec["body"])
-            except Exception:
-                continue
-            if b.get("skipped") or not (b.get("prompt") or "").strip(): continue
-            p = byid.get(b.get("prompt_id"))
-            if not p: continue
-            x = inf.behavior_features(b.get("events") or [])
-            if x is None: continue
-            expected = p["type_text"] + (("\n\n" + p["paste_text"]) if p.get("paste_text") else "")
-            sim = difflib.SequenceMatcher(None, re.sub(r"\s+", " ", b["prompt"]).strip().lower(),
-                                          re.sub(r"\s+", " ", expected).strip().lower()).ratio()
-            rows.append({"token": token, "true_actor": actor, "prompt_id": p["id"], "true_content": p["class"],
-                         "prompt": b["prompt"], "text_match": round(sim, 3),
-                         "group_actor": token if actor == "human" else "AG:" + p["id"],
-                         **{k: (np.nan if x[k] is None else x[k]) for k in HARD}})
-    return pd.DataFrame(rows)
+    """The collected entries as a table (same reader as Admin > Model accuracy)."""
+    import pandas as pd
+    rows = acc.collected_rows(cap, bank)
+    for r in rows:
+        r["group_actor"] = r["token"] if r["true_actor"] == "human" else "AG:" + r["prompt_id"]
+    df = pd.DataFrame(rows)
+    if len(df):
+        df[HARD] = df[HARD].astype(float)       # a missing feature becomes NaN
+    return df
 
 
 def prf(pred, truth):
@@ -151,14 +127,16 @@ def main():
     sim = pd.concat([pd.read_csv(p).rename(columns={"true_actor": "label"})[HARD + ["label"]] for p in sim_files], ignore_index=True)
     Xs = sim[HARD].astype(float).replace([np.inf, -np.inf], np.nan); ys = (sim.label == "agent").astype(int).values
     Xl = df[HARD].astype(float); yl = (df.true_actor == "agent").astype(int).values
+    actor_oof = content_oof = None               # held-out predictions, one per collected entry
     if df.true_actor.nunique() == 2 and df.group_actor.nunique() >= 5:
-        hit = np.zeros(len(df), bool)
+        hit = np.zeros(len(df), bool); actor_oof = np.empty(len(df), dtype=object)
         for tr, te in GroupKFold(5).split(Xl, yl, df.group_actor):
             m = xgb.XGBClassifier(n_estimators=200, max_depth=3, learning_rate=0.1, subsample=0.9, colsample_bytree=0.9,
                                   eval_metric="logloss", random_state=1, base_score=0.5)
             m.fit(pd.concat([Xs, Xl.iloc[tr]]), np.concatenate([ys, yl[tr]]),
                   sample_weight=np.concatenate([np.full(len(ys), 0.5), np.ones(len(tr))]))
-            hit[te] = m.predict(Xl.iloc[te]) == yl[te]
+            pred = m.predict(Xl.iloc[te])
+            hit[te] = pred == yl[te]; actor_oof[te] = np.where(pred == 1, "agent", "human")
         rep["refined_actor_leave_participants_out"] = {"accuracy": round(float(hit.mean()), 3),
             "human_kept_as_human": round(float(hit[yl == 0].mean()), 3), "agent_caught": round(float(hit[yl == 1].mean()), 3)}
         say("  refined actor (participants held out):", rep["refined_actor_leave_participants_out"])
@@ -178,18 +156,33 @@ def main():
             if lab in CLASSES and len(t) >= 15 and i not in held and norm(t) not in heldtxt:
                 base[t[:4000]] = lab
         bt = list(base); bl = list(base.values())
-        ok = np.zeros(len(uniq), bool)
+        ok = np.zeros(len(uniq), bool); pred_u = np.empty(len(uniq), dtype=object)
         for k, (tr, te) in enumerate(GroupKFold(5).split(uniq, uniq.true_content, uniq.prompt_id), 1):
             vec = TfidfVectorizer(sublinear_tf=True, ngram_range=(1, 2), min_df=2, max_features=30000)
             X = vec.fit_transform(bt + list(uniq.prompt.iloc[tr])); w = np.concatenate([np.ones(len(bt)), np.full(len(tr), 5.0)])
             clf = LogisticRegression(max_iter=3000, class_weight="balanced", C=4.0).fit(X, bl + list(uniq.true_content.iloc[tr]), sample_weight=w)
-            ok[te] = clf.predict(vec.transform(uniq.prompt.iloc[te])) == uniq.true_content.iloc[te].values
+            pred_u[te] = clf.predict(vec.transform(uniq.prompt.iloc[te]))
+            ok[te] = pred_u[te] == uniq.true_content.iloc[te].values
             say(f"  content fold {k}/5 done")
+        content_oof = df.prompt_id.map(dict(zip(uniq.prompt_id, pred_u))).values
         rep["refined_content_leave_prompts_out"] = {"accuracy": round(float(ok.mean()), 3),
+            "accuracy_by_entry": round(float((content_oof == df.true_content.values).mean()), 3),
+            "recall_by_class_by_entry": {c: round(float((content_oof[(df.true_content == c).values] == c).mean()), 3)
+                                         for c in CLASSES if (df.true_content == c).any()},
             "recall_by_class": {c: round(float(ok[(uniq.true_content == c).values].mean()), 3) for c in CLASSES if (uniq.true_content == c).any()}}
         say("  refined content (prompts held out):", rep["refined_content_leave_prompts_out"])
     else:
         rep["refined_content_leave_prompts_out"] = None
+    # both together: the final category from the two held-out predictions. When the content model is
+    # carried over (behavior-only update) its current predictions are used.
+    content_used = content_oof if content_oof is not None else (df.content_pred.values if a.actor_only else None)
+    if actor_oof is not None and content_used is not None:
+        cat = np.array([category(c, x) for c, x in zip(content_used, actor_oof)], dtype=object)
+        rep["refined_category_heldout"] = {"accuracy": round(float((cat == df.true_category.values).mean()), 3),
+                                           "content": "held out" if content_oof is not None else "carried over"}
+        say("  refined final category (held out):", rep["refined_category_heldout"])
+    else:
+        rep["refined_category_heldout"] = None
 
     # 3. final refit on everything + export
     say("step 3/3: retraining on all data and exporting the new model files")

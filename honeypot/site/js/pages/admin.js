@@ -1,9 +1,9 @@
-// Admin page: sign-in with the admin password, then three tabs (overview, model updates and
-// rollback, prompt quantity). All data comes from /<TOKEN>/admin/api/* and needs the admin
-// session cookie set at sign-in.
+// Admin page: sign-in with the admin password, then four tabs (overview, model accuracy, model
+// updates and rollback, prompt quantity). All data comes from /<TOKEN>/admin/api/* and needs the
+// admin session cookie set at sign-in.
 const VERSION_PREFIX = "/" + (location.pathname.split("/")[1] || "");
-const TABS = ["overview", "models", "pool"];
-const HASH_TO_TAB = { overview: "overview", models: "models", rollback: "models", quantity: "pool", pool: "pool" };
+const TABS = ["overview", "accuracy", "models", "pool"];
+const HASH_TO_TAB = { overview: "overview", accuracy: "accuracy", models: "models", rollback: "models", quantity: "pool", pool: "pool" };
 let pollTimer = null, alive = false;
 
 const $ = id => document.getElementById(id);
@@ -16,6 +16,8 @@ function el(tag, props, ...kids) {
 const when = iso => (iso ? new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "");
 const pct = v => (v === null || v === undefined ? "n/a" : Math.round(v * 100) + "%");
 const LABEL = { "Allow": "Allow", "Shadow AI": "Shadow AI", "Automated AI Pipelines": "Automated" };
+// content accuracy of an update, counted per entry like every other figure (older reports: per prompt)
+const byEntry = rc => (rc.accuracy_by_entry === null || rc.accuracy_by_entry === undefined ? rc.accuracy : rc.accuracy_by_entry);
 
 async function api(path, body) {
   const opt = { credentials: "same-origin", headers: { "X-PG-Admin": "1" } };
@@ -48,8 +50,9 @@ function selectTab() {
   const tab = currentTab();
   for (const t of TABS) $("ad-p-" + t).hidden = (t !== tab);
   document.querySelectorAll("#ad-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === tab ? "true" : "false"));
-  stopPolling();
+  stopPolling(); hideTip();
   if (tab === "overview") loadOverview();
+  if (tab === "accuracy") loadAccuracy();
   if (tab === "models") { loadModels(); loadUpdate(); }
   if (tab === "pool") loadPool();
   if (location.hash === "#rollback") setTimeout(() => $("ad-rollback-card").scrollIntoView({ behavior: "smooth", block: "start" }), 50);
@@ -78,6 +81,91 @@ async function loadOverview() {
   $("ad-env").textContent = "Participants enter " + d.settings.default_quantity + " prompts by default" + (d.settings.participant_can_choose ? " and can pick between " + d.settings.min_quantity + " and " + d.settings.max_quantity + "." : ".");
 }
 
+// ---------------------------------------------------------------- model accuracy
+// The two charts arrive as SVG drawn by the server (the same drawing as the PDF). Each bar and each
+// version in the line chart carries its figures in a data-tip attribute, shown here on hover or focus.
+const tzMinutes = () => -new Date().getTimezoneOffset();
+let tipFocus = null;      // the chart group whose figures are shown because it has keyboard focus
+// One group at a time is "pointed at": its figures are in the box and, in the line chart, its
+// crosshair is shown (the crosshairs are drawn under the data and are hidden otherwise).
+function hideTip() {
+  const t = $("ad-tip"); if (t) t.hidden = true; tipFocus = null;
+  document.querySelectorAll("#ad-p-accuracy .pg-hover").forEach(c => c.setAttribute("opacity", "0"));
+}
+function tipAtCenter(group) { const r = group.getBoundingClientRect(); showTip(group, r.left + r.width / 2, r.top + r.height / 2); }
+// the box does not move with the page, so when the page scrolls it is put back next to its group
+function onScroll() { if (tipFocus && tipFocus.isConnected) tipAtCenter(tipFocus); }
+function showTip(group, x, y) {
+  let d; try { d = JSON.parse(group.getAttribute("data-tip")); } catch (e) { return; }
+  const key = group.getAttribute("data-key"), svg = group.ownerSVGElement;
+  document.querySelectorAll("#ad-p-accuracy .pg-hover").forEach(c => c.setAttribute("opacity", key !== null && c.ownerSVGElement === svg && c.getAttribute("data-key") === key ? "1" : "0"));
+  const tip = $("ad-tip"); tip.replaceChildren();
+  tip.append(el("div", { class: "ad-tip-head" }, d.head));
+  if (d.sub) tip.append(el("div", { class: "ad-tip-sub" }, d.sub));
+  for (const [name, value, color] of d.rows || []) {
+    const chip = el("span", { class: "ad-tip-chip" }); chip.style.background = color;
+    tip.append(el("div", { class: "ad-tip-row" }, chip, el("span", {}, name), el("b", {}, value)));
+  }
+  for (const [name, value] of d.more || []) tip.append(el("div", { class: "ad-tip-row ad-tip-more" }, el("span", {}, name), el("b", {}, value)));
+  tip.hidden = false;
+  const r = tip.getBoundingClientRect();
+  let left = x + 14, top = y + 14;
+  if (left + r.width > window.innerWidth - 8) left = x - r.width - 14;
+  if (top + r.height > window.innerHeight - 8) top = y - r.height - 14;
+  tip.style.left = Math.max(8, left) + "px"; tip.style.top = Math.max(8, top) + "px";
+}
+function putChart(box, svgText) {
+  const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+  const svg = doc.documentElement;
+  if (!svg || svg.nodeName !== "svg") { box.replaceChildren(el("p", { class: "ad-muted" }, "The chart could not be drawn. The figures are in the table below.")); return; }
+  box.replaceChildren(document.importNode(svg, true));
+  box.querySelectorAll("g[data-tip]").forEach(g => {
+    const at = e => { tipFocus = null; showTip(g, e.clientX, e.clientY); };
+    g.addEventListener("pointerenter", at); g.addEventListener("pointermove", at); g.addEventListener("pointerdown", at);
+    g.addEventListener("pointerleave", hideTip); g.addEventListener("pointercancel", hideTip);
+    g.addEventListener("focus", () => { if (g.matches(":focus-visible")) { tipAtCenter(g); tipFocus = g; } });
+    g.addEventListener("blur", () => { if (tipFocus === g) hideTip(); });
+  });
+}
+async function loadAccuracy() {
+  let d;
+  try { d = await api("/admin/api/accuracy?tz=" + tzMinutes()); }
+  catch (e) { if (alive && !$("ad-app").hidden) msg($("ad-acc-msg"), "The accuracy figures could not be loaded: " + e.message, "err"); return; }
+  if (!alive) return;
+  msg($("ad-acc-msg"), "");
+  const rep = d.report, cur = rep.current;
+  $("ad-acc-inuse").textContent = "In use: " + d.in_use + ". As of " + rep.generated_text + ".";
+  putChart($("ad-acc-bars"), d.charts.bars);
+  putChart($("ad-acc-lines"), d.charts.lines);
+  $("ad-acc-basis").textContent = cur.basis_text;
+  const dt = $("ad-acc-detail"); dt.replaceChildren();
+  dt.append(el("tr", {}, el("th", {}, "Model"), el("th", { class: "ad-num" }, "Accuracy"), el("th", {}, "What it measures"), el("th", {}, "By part")));
+  for (const row of d.detail) dt.append(el("tr", {}, el("td", { class: "ad-nowrap" }, row.name), el("td", { class: "ad-num ad-nowrap" }, row.value === "n/a" ? "not measured yet" : row.value),
+    el("td", {}, row.measures), el("td", {}, row.parts.map(p => p[0] + " " + p[1]).join(", "))));
+  const notes = $("ad-acc-notes"); notes.replaceChildren(...d.notes.map(n => el("li", {}, n)));
+  const ht = $("ad-acc-history"); ht.replaceChildren();
+  ht.append(el("tr", {}, el("th", {}, "Version"), el("th", {}, "Made"), el("th", { class: "ad-num" }, "Content"), el("th", { class: "ad-num" }, "Behavior"),
+    el("th", { class: "ad-num" }, "Both together"), el("th", { class: "ad-num" }, "Entries"), el("th", {}, "")));
+  for (const p of rep.history) ht.append(el("tr", {}, el("td", {}, p.name), el("td", {}, p.made_text || "before any update"),
+    el("td", { class: "ad-num" }, pct(p.content)), el("td", { class: "ad-num" }, pct(p.behavior)), el("td", { class: "ad-num" }, pct(p.combined)),
+    el("td", { class: "ad-num" }, p.entries === null || p.entries === undefined ? "" : p.entries),
+    el("td", {}, p.in_use ? el("span", { class: "ad-badge" }, "In use") : "")));
+}
+async function downloadPdf() {
+  const btn = $("ad-acc-pdf"); btn.disabled = true; msg($("ad-acc-msg"), "");
+  try {
+    const res = await fetch(VERSION_PREFIX + "/admin/api/accuracy.pdf?tz=" + tzMinutes(), { credentials: "same-origin" });
+    if (res.status === 401) { showLogin(); return; }
+    if (!res.ok) throw new Error("The PDF could not be made (error " + res.status + "). Try again.");
+    const blob = await res.blob();
+    const named = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") || "");
+    const a = el("a", { href: URL.createObjectURL(blob), download: named ? named[1] : "PromptGate_model_accuracy.pdf" });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+  } catch (e) { msg($("ad-acc-msg"), e.message || "The PDF could not be downloaded.", "err"); }
+  finally { btn.disabled = false; }
+}
+
 // ---------------------------------------------------------------- models: update job
 function envNotes(env) {
   const box = $("ad-update-env"); box.replaceChildren();
@@ -94,15 +182,15 @@ function envNotes(env) {
 function reportView(rep) {
   const box = $("ad-report"); box.replaceChildren();
   if (!rep || !rep.current_models) return;
-  const c = rep.current_models, ra = rep.refined_actor_leave_participants_out, rc = rep.refined_content_leave_prompts_out;
+  const c = rep.current_models, ra = rep.refined_actor_leave_participants_out, rc = rep.refined_content_leave_prompts_out, rk = rep.refined_category_heldout;
   const t = el("table", { class: "ad-table" });
   t.append(el("tr", {}, el("th", {}, "On the collected data"), el("th", { class: "ad-num" }, "Models before this update"), el("th", { class: "ad-num" }, "After (estimated on held-out data)")));
   const row = (name, before, after) => t.append(el("tr", {}, el("td", {}, name), el("td", { class: "ad-num" }, before), el("td", { class: "ad-num" }, after)));
-  row("Content: right category from the text", pct(c.content_accuracy), rc ? pct(rc.accuracy) : (rep.content_retrained ? "not estimated" : "unchanged"));
+  row("Content: right category from the text", pct(c.content_accuracy), rc ? pct(byEntry(rc)) : (rep.content_retrained ? "not estimated" : "unchanged"));
   row("Behavior: person vs agent", pct(c.actor_accuracy), ra ? pct(ra.accuracy) : "not estimated");
   row("People correctly seen as people", pct(c.human_kept_as_human), ra ? pct(ra.human_kept_as_human) : "not estimated");
   row("Agents caught", pct(c.agent_caught), ra ? pct(ra.agent_caught) : "not estimated");
-  row("Final 3-way category", pct(c.category_accuracy_3way), "");
+  row("Final 3-way category", pct(c.category_accuracy_3way), rk ? pct(rk.accuracy) : "not estimated");
   box.append(el("p", { class: "ad-muted" }, "Based on " + rep.n_rows + " entries (" + (rep.by_actor.human || 0) + " by people from " + rep.participants + " participants, " + (rep.by_actor.agent || 0) + " by agents)."), el("div", { class: "ad-tablewrap" }, t));
 }
 async function loadUpdate() {
@@ -137,7 +225,7 @@ function versionSummary(v) {
   if (r.n_rows) parts.push(r.n_rows + " collected entries, " + (r.participants || 0) + " participants");
   const ra = r.refined_actor_leave_participants_out, rc = r.refined_content_leave_prompts_out;
   if (ra) parts.push("behavior " + pct(ra.accuracy) + " on held-out participants");
-  if (rc) parts.push("content " + pct(rc.accuracy) + " on held-out prompts");
+  if (rc) parts.push("content " + pct(byEntry(rc)) + " on held-out prompts");
   return parts.join("; ") + ".";
 }
 async function loadModels() {
@@ -207,6 +295,11 @@ export async function init() {
   document.querySelectorAll("#ad-tabs button").forEach(b => b.addEventListener("click", () => { history.replaceState(history.state, "", "#" + b.dataset.tab); selectTab(); }));
   window.addEventListener("hashchange", onHash);
   $("ad-run").addEventListener("click", runUpdate);
+  $("ad-acc-pdf").addEventListener("click", downloadPdf);
+  if (!$("ad-tip")) {     // the box with a chart's figures; it sits outside the page area so that it is placed against the window
+    const tip = el("div", { class: "ad-tip", id: "ad-tip", hidden: true }); tip.setAttribute("aria-hidden", "true"); document.body.append(tip);
+  }
+  window.addEventListener("scroll", onScroll, true);
   $("ad-q-save").addEventListener("click", saveSettings);
   confirmClick($("ad-rollback-base"), () => rollback("baseline", "The original models are in use again."));
   confirmClick($("ad-rollback-date"), () => {
@@ -225,6 +318,7 @@ export async function init() {
 }
 function onHash() { if (alive && !$("ad-app").hidden) selectTab(); }
 export function cleanup() {
-  alive = false; stopPolling(); window.removeEventListener("hashchange", onHash);
+  alive = false; stopPolling(); window.removeEventListener("hashchange", onHash); window.removeEventListener("scroll", onScroll, true);
   const c = document.getElementById("content"); if (c) c.classList.remove("ad-wide");
+  const tip = document.getElementById("ad-tip"); if (tip) tip.remove();
 }

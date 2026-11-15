@@ -25,6 +25,8 @@ browsing-agent honeypot, which is kept in this repository and credited
 - Two models, one for content and one for behavior, trained before any study data was collected.
 - Model updates that run on the server from the Admin page, with every version kept and a
   rollback to any date or all the way back to the original models.
+- A **Model accuracy** page under Admin: a bar chart of the models in use, a line chart across
+  model versions, and both as a PDF download.
 
 ## Contents
 
@@ -55,10 +57,10 @@ and anything else (for example `HOME`) is a test link. Tokens are 1 to 32 charac
 | Home | `/HOME/` | anyone | Two cards that lead to the study and the detector. |
 | Prompt Study | `/<TOKEN>/gateway` | study login | A participant types prompts from the prompt pool; each one is recorded with its typing and mouse behavior. |
 | Live Detector | `/<TOKEN>/detector` | study login | Type or paste any prompt and see the category the gateway assigns, with the two parts of the decision shown separately. |
-| Admin | `/<TOKEN>/admin` | admin password | Overview of the collected data, model updates run on the server, model rollback, prompt quantity settings. |
+| Admin | `/<TOKEN>/admin` | admin password | Overview of the collected data, model accuracy charts with a PDF download, model updates run on the server, model rollback, prompt quantity settings. |
 
-The top menu is: Prompt Study, Live Detector, Admin (a drop-down with Overview, Update models,
-Roll back models, Prompt quantity) and Log out.
+The top menu is: Prompt Study, Live Detector, Admin (a drop-down with Overview, Model accuracy,
+Update models, Roll back models, Prompt quantity) and Log out.
 
 ## Repository layout
 
@@ -66,6 +68,8 @@ Roll back models, Prompt quantity) and Log out.
 honeypot/
   server_plus.py          the PromptGate web server (Python standard library only)
   admin.py                admin back end: password, sign-in, overview, model-update job, settings
+  accuracy.py             reads the collected entries and works out the accuracy of each model version
+  charts.py               draws the accuracy charts, as SVG for the page and as a PDF
   model_registry.py       model versions: store, activate, roll back
   inference.py            scores both models in plain Python and applies the category rule
   behavioral_features.py  turns key and mouse events into behavior features
@@ -169,6 +173,43 @@ Log out link in the menu ends it.
 
 Counts of participants with entries, prompts entered by people and by agents, Live Detector uses
 and feedback clicks, entries from test links, a per-participant table, and which models are in use.
+
+### Model accuracy
+
+**Admin > Model accuracy** shows how well the models judge prompts, in three figures. Each one is
+the share of entries judged correctly.
+
+| Figure | What it measures |
+|---|---|
+| Content model | The category from the text of the prompt alone. |
+| Behavior model | Person or agent, from typing and mouse behavior. |
+| Both together | The final category the gateway gives. |
+
+- **Accuracy of the models in use**: a bar chart of the three figures for the version the Live
+  Detector is using. The table under it splits the content figure by category and the behavior
+  figure into people and agents.
+- **Accuracy over time**: a line chart with one point for the original models and one for each
+  model update, oldest on the left. Pointing at a bar or at a version shows its figures. The
+  chart draws the original models and the 11 most recent updates; the table under it lists every
+  version.
+- **Download as PDF**: one page (US Letter) with both charts, the version table and a note on how
+  to read them, saved as `PromptGate_model_accuracy_<date>.pdf`.
+
+Every figure comes from entries the models were not trained on:
+
+- The **original models** are scored on all entries collected so far (links `P01` to `P20` and the
+  agent driver), so their figures move as more entries come in. Until there are 20 usable entries,
+  the page shows their test scores from before the study: the content model on the prompt pool,
+  which was held out of its training, and the behavior model by cross-validation. "Both together"
+  is not measured until then.
+- A **model update** shows the estimates made when it was created (step 2 under
+  [Update models](#update-models)), and they stay as they were. An update of the behavior model
+  alone keeps the content figure of the version it started from.
+- An entry counts when its text is close to the prompt that was assigned, the same rule the model
+  update uses. The Entries column says how many entries each row is based on.
+
+The server draws the charts itself in plain Python (`honeypot/charts.py`), so nothing has to be
+installed for this page.
 
 ### Update models
 
