@@ -104,7 +104,8 @@ def main():
               "intercept": [round(float(x), 5) for x in clf.intercept_],
               "terms": {str(t): [round(float(idf[i]), 4)] + [round(float(c), 4) for c in coef[:, i]] for i, t in enumerate(terms)},
               "n_train": len(texts), "train_counts": dict(Counter(labels)), "cv5_macro_f1": round(float(cv), 4),
-              "bank_held_out": not a.include_bank, "bank_acc": bank_acc}
+              "bank_held_out": not a.include_bank, "bank_acc": bank_acc,
+              "bank_version": bank.get("version"), "bank_sizes": dict(Counter(b["class"] for b in bank["prompts"]))}
         json.dump(cj, open(out / "content_model.json", "w"))
         say(f"content: cv macro-F1 {cv:.3f} | accuracy on the prompt bank ({'held out' if not a.include_bank else 'included in training'}) {bank_acc}")
 

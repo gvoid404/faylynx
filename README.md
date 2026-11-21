@@ -19,8 +19,9 @@ browsing-agent honeypot, which is kept in this repository and credited
 
 - The site: a home page, a **Prompt Study** page and a **Live Detector** page, with a study login
   in front of the last two, and an **Admin** page with its own password.
-- A fixed pool of 160 prompts, and a participant workbook with each participant's link and 12
-  assigned prompts. Participants can choose how many prompts they enter.
+- A fixed pool of 1,000 prompts (`bank_v2`: 70% Shadow AI, 20% Allow, 10% Automated) with 40
+  assigned prompts per participant and 200 set aside for agents. Participants can choose how many
+  prompts they enter. The earlier 160-prompt pool is kept as `study/prompt_bank_v1.json`.
 - An agent driver that enters prompts into the site from a laptop.
 - Two models, one for content and one for behavior, trained before any study data was collected.
 - Model updates that run on the server from the Admin page, with every version kept and a
@@ -83,6 +84,7 @@ honeypot/
 study/
   STUDY_GUIDE.md              step-by-step notes for updating the server and collecting data
   prompt_bank.json            the prompt pool (same file as honeypot/site/prompt_bank.json)
+  prompt_bank_v1.json         the previous 160-prompt pool, kept for rollback (not served)
   PromptGate_prompt_sheet.xlsx  participant workbook: links, assigned prompts, progress
   sim_gateway.py              agent driver (run on a laptop)
   refine_models.py            scores the models on collected data and retrains them (run by Admin)
@@ -132,16 +134,19 @@ There is no study login on a local copy; that login is added by the web front en
 
 - The participant picks a number on the consent card (when the admin allows it).
 - The admin sets the default, the fewest and the most on **Admin > Prompt quantity**, and can turn
-  the participant's choice off. The shipped settings are default 12, fewest 2, most 40. The most
-  can be at most 120, the number of Allow and Shadow AI prompts in the pool.
+  the participant's choice off. The shipped settings are default 12, fewest 2, most 40.
 
-Participants `P01` to `P20` always start with their 12 assigned prompts: 6 Allow and 6 Shadow AI,
-alternating. Every Allow and Shadow AI prompt is assigned to exactly 2 people. A larger number
-continues with more prompts from the pool in an order that is fixed for that participant; a
-smaller number stops early. Any other link token gets a random draw.
+Participants `P01` to `P20` each have 40 assigned prompts of their own (no prompt is assigned to
+two people): 28 Shadow AI, 8 Allow and 4 Automated, ordered so that every block of 10 is 7/2/1, so
+whatever number a participant picks, they see about the pool's mix. A smaller number stops early.
+Any other link token gets a random draw of Allow and Shadow AI prompts.
 
-`study/PromptGate_prompt_sheet.xlsx` lists each participant's link and assigned prompts and tracks
-progress.
+Prompts longer than 300 characters that have no separate data part (real prompts that are mostly
+pasted text) are shown in the copy box and pasted whole, not retyped; the entry is logged with
+`pasted_whole: true`.
+
+`study/PromptGate_prompt_sheet.xlsx` was made for the 160-prompt pool and does not list the bank_v2
+assignments; the participant links in it are unchanged.
 
 ## Live Detector page
 
@@ -278,8 +283,29 @@ agents have entered so far.
 
 ## Prompt pool: size and source
 
-The pool (`bank_v1`, in `study/prompt_bank.json`) holds **160 prompts**. People type the 120 Allow
-and Shadow AI prompts; agents enter all 160.
+**Current pool: `bank_v2`** (in `study/prompt_bank.json`, same file as
+`honeypot/site/prompt_bank.json`), **1,000 prompts**, built by the Paper 2 tools
+(`make_pool_v2_shadow.py`, `paper2_pool_v2_real_rev6.ipynb`, `build_prompt_bank_v2b.py`):
+
+| Category | In the pool | Source |
+|---|---:|---|
+| Shadow AI | 700 | Written for this project: 560 data handling (customer, staff and patient records, credentials, internal financials, contracts, proprietary code, internal strategy) and 140 workplace-control evasion (DLP, web filters, monitoring, device and transfer policies, approvals; no model jailbreaks). Every company, person, number and secret is made up. |
+| Allow | 200 | Real first-turn prompts from WildChat-4.8M (non-toxic release, ODC-BY), a uniform random sample: 134 work-style, 66 general. |
+| Automated | 100 | Real prompts from the same sample. |
+
+The real prompts were kept only if the masking step (`mask_secrets.py`) found no personal data or
+secret in them, they were not in or near any training, audit or earlier-pool prompt, an LLM judge
+(rubric v3.1) labeled them with confidence of at least 0.8, and they passed a hand review. Pool
+prompts stay out of content-model training: the training scripts hold out whatever pool is in
+`prompt_bank.json`.
+
+The 200 prompts in the bank's `agent_reserve` (same 70/20/10 mix) are not assigned to any
+participant; the agent driver enters only these by default.
+
+**Previous pool: `bank_v1`** (kept in `study/prompt_bank_v1.json`), **160 prompts**. People typed
+the 120 Allow and Shadow AI prompts; agents entered all 160. The original models were scored on
+this pool, and the Model accuracy page says so until enough study entries exist. To go back to it,
+copy it over both `prompt_bank.json` files. It was built as follows:
 
 | Category | In the pool | Passed screening | In the source | Source |
 |---|---:|---:|---:|---|
@@ -346,10 +372,12 @@ Each session prints one line that says `ok` or `error`. If the first sessions al
 the username or password is probably wrong: stop with Ctrl+C and start again.
 
 The full run is 240 sessions and takes about an hour. Leave the window open. `--limit N` runs only
-N sessions.
+N sessions; `--all-prompts` enters every pool prompt instead of the agent reserve (about 1,200
+sessions).
 
-What it sends: each of the 40 Automated prompts under three agent styles (120 sessions), plus each
-of the 120 Allow and Shadow AI prompts once (120 sessions), so that prompt category and typist are
+What it sends (bank_v2): the 200 prompts in the agent reserve, each of its 20 Automated prompts
+under three agent styles (60 sessions) plus each of its 180 Allow and Shadow AI prompts once (180
+sessions), so that prompt category and typist are
 not tied together.
 
 | Agent style | How it enters the prompt |

@@ -24,6 +24,7 @@ import model_registry as reg
 HERE = Path(__file__).resolve().parent
 CAPTURE_DIR = HERE.parent / "captures"
 BANK_FILE = HERE / "site" / "prompt_bank.json"
+BANK_V1_FILE = HERE.parent / "study" / "prompt_bank_v1.json"   # the pool the original models were scored on
 HARD = ["inter_key_cv", "dwell_cv", "mouse_straightness", "prog_fill_ratio", "paste_to_type_ratio", "has_mouse", "has_typing"]
 CLASSES = ["Allow", "Shadow AI", "Automated AI Pipelines"]
 MIN_ENTRIES = 20            # fewest usable entries before the collected data is used as the test
@@ -182,11 +183,19 @@ def _original_point(rows, sig):
                              f"{c['agents']} by agents). The original models were not trained on any of them.")
         return pt
     meta = reg.baseline_meta()
-    bank = json.load(open(BANK_FILE, encoding="utf-8"))
-    sizes = {}
-    for p in bank["prompts"]:
-        sizes[p["class"]] = sizes.get(p["class"], 0) + 1
-    by_class = (meta.get("content") or {}).get("bank_acc") or {}
+    cm = meta.get("content") or {}
+    # Weight by the pool the model was scored on. Models made before bank_v2 did not record it; they were
+    # scored on bank_v1 (kept in study/prompt_bank_v1.json), not on whatever pool is active now.
+    sizes, pool_name = cm.get("bank_sizes"), cm.get("bank_version")
+    if not sizes:
+        src = BANK_V1_FILE if BANK_V1_FILE.is_file() else BANK_FILE
+        bank = json.load(open(src, encoding="utf-8")); sizes = {}
+        for p in bank["prompts"]:
+            sizes[p["class"]] = sizes.get(p["class"], 0) + 1
+        pool_name = bank.get("version")
+    current = (json.load(open(BANK_FILE, encoding="utf-8")) or {}).get("version")
+    pool_text = f"{sum(sizes.values())} pool prompts" + (f" of {pool_name}, the pool before the current one" if pool_name and pool_name != current else "")
+    by_class = cm.get("bank_acc") or {}
     known = [c for c in CLASSES if c in by_class and sizes.get(c)]
     content = round(sum(by_class[c] * sizes[c] for c in known) / sum(sizes[c] for c in known), 3) if known else None
     held_out = ", which were held out of its training" if (meta.get("content") or {}).get("bank_held_out") else ""
@@ -194,7 +203,7 @@ def _original_point(rows, sig):
               content_by_category={c: by_class[c] for c in known}, people_kept=None, agents_caught=None,
               basis="before_study", entries=None,
               basis_text=f"There are not enough study entries yet ({len(rows)} so far, {MIN_ENTRIES} are needed). Until then: the content "
-                         f"model on the {sum(sizes.values())} pool prompts{held_out}, and the "
+                         f"model on the {pool_text}{held_out}, and the "
                          "behavior model by cross-validation on scripted sessions. Both together is not measured yet.")
     return pt
 

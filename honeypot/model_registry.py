@@ -58,7 +58,8 @@ def _summarize(folder):
     return {"content": {"tag": c.get("tag"), "created_at": c.get("created_at"), "n_train": c.get("n_train"),
                         "cv5_macro_f1": c.get("cv5_macro_f1"),
                         "bank_acc": c.get("bank_acc") or c.get("bank_holdout_acc"),
-                        "bank_held_out": c.get("bank_held_out", "bank_holdout_acc" in c)},
+                        "bank_held_out": c.get("bank_held_out", "bank_holdout_acc" in c),
+                        "bank_version": c.get("bank_version"), "bank_sizes": c.get("bank_sizes")},
             "actor": {"tag": a.get("tag"), "created_at": a.get("created_at"), "n_train": a.get("n_train"),
                       "n_agent": a.get("n_agent"), "cv5_acc": a.get("cv5_acc")}}
 

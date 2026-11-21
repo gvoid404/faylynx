@@ -55,7 +55,7 @@ python sim_gateway.py --base https://clemons.us --user study --limit 6
 - Agents (your laptop, needs `pip install playwright` and `playwright install chromium`):
   ```powershell
   python sim_gateway.py --base https://clemons.us --limit 6     # smoke test
-  python sim_gateway.py --base https://clemons.us               # all 240 sessions
+  python sim_gateway.py --base https://clemons.us               # all 240 sessions (the pool's 200-prompt agent reserve)
   ```
 
 ## 3. Where the data lands

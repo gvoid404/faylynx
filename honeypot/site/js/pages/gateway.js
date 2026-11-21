@@ -1,14 +1,19 @@
 // Prompt Study page. After consent, the participant enters prompts drawn from the study's prompt
 // bank (prompt_bank.json). How many is set on the Admin page (default, fewest, most) and, when
 // allowed, chosen by the participant before starting.
-//   /<TOKEN>/gateway      TOKEN = a participant id in the bank's "sets" (P01..P20): their 12 assigned
-//                         prompts come first, then more from the pool in an order fixed for that
-//                         participant. Any other token: a random draw. Allow and Shadow AI alternate.
+//   /<TOKEN>/gateway      TOKEN = a participant id in the bank's "sets" (P01..P20): their assigned
+//                         prompts come first (40 in bank_v2, ordered so any first n keep roughly the
+//                         pool's 70/20/10 Shadow AI/Allow/Automated mix), then more from the pool in an
+//                         order fixed for that participant. Any other token: a random draw. Allow and
+//                         Shadow AI alternate.
+//   A prompt longer than LONG_PROMPT characters with no separate data part (real prompts that are
+//   mostly pasted text) is shown in the copy box and pasted whole instead of retyped.
 //   ?scenario=<promptId>  one specific prompt (used by the agent driver, incl. Automated ones).
 // Each Send posts to /<TOKEN>/prompt: the entered text, the prompt id and its class, and the
 // keystroke/mouse events for that one prompt (captures/<TOKEN>_prompt.jsonl on the server).
 const VERSION_PREFIX = "/" + (location.pathname.split("/")[1] || "");
 const TOKEN = location.pathname.split("/")[1] || "";
+const LONG_PROMPT = 300;
 const REPLIES = ["Here's a draft. Let me know if you'd like it shorter.", "Sure, here is a summary of the key points.",
   "Done. I've organized that for you.", "Thanks, here's my take, with a couple of caveats."];
 
@@ -93,10 +98,17 @@ export async function init() {
     const c = cards[idx];
     if (!c) { finish(); return; }
     $("gw-step").textContent = idx + 1; $("gw-pid").textContent = c.id;
-    $("gw-type").textContent = c.type_text;
-    if (c.paste_text) { $("gw-payload").textContent = c.paste_text; $("gw-paste-wrap").hidden = false; }
-    else { $("gw-paste-wrap").hidden = true; }
-    $("gw-copy").textContent = "Copy data";
+    const pasteAll = !c.paste_text && c.type_text.length > LONG_PROMPT;
+    $("gw-type-title").hidden = pasteAll; $("gw-type").hidden = pasteAll;
+    $("gw-type").textContent = pasteAll ? "" : c.type_text;
+    if (pasteAll) {
+      $("gw-paste-title").textContent = "This prompt is long: copy it and paste it into the box below";
+      $("gw-payload").textContent = c.type_text; $("gw-paste-wrap").hidden = false;
+    } else if (c.paste_text) {
+      $("gw-paste-title").textContent = "Then copy this (made-up) data and paste it after what you typed";
+      $("gw-payload").textContent = c.paste_text; $("gw-paste-wrap").hidden = false;
+    } else { $("gw-paste-wrap").hidden = true; }
+    $("gw-copy").textContent = pasteAll ? "Copy prompt" : "Copy data";
     promptEl.value = "";
     task.hidden = false; reply.hidden = true; done.hidden = true;
     tStart = performance.now(); rec.start(promptEl); promptEl.focus();
@@ -104,7 +116,8 @@ export async function init() {
   function submit(skipped) {
     const c = cards[idx];
     post("/prompt", { visitorId: getCookie("visitorId"), prompt_id: c.id, scenario_id: c.id, target_class: c.class,
-      prompt: skipped ? "" : promptEl.value, skipped: !!skipped, had_payload: !!c.paste_text, assignment, quantity,
+      prompt: skipped ? "" : promptEl.value, skipped: !!skipped, had_payload: !!c.paste_text,
+      pasted_whole: !c.paste_text && c.type_text.length > LONG_PROMPT, assignment, quantity,
       compose_ms: Math.round(performance.now() - tStart), order: idx, ts: Date.now(), events: rec.take() });
     task.hidden = true; $("gw-reply-text").textContent = REPLIES[idx % REPLIES.length]; reply.hidden = false;
     try { localStorage.setItem(KEY, String(idx + 1)); } catch (e) {}

@@ -322,8 +322,9 @@ def pool_report():
         c["entered_by_humans"] += 1 if u.get("human") else 0
         c["entered_by_agents"] += 1 if u.get("agent") else 0
         c["human_entries"] += u.get("human", 0); c["agent_entries"] += u.get("agent", 0)
+    reserve = bank.get("agent_reserve") or []          # bank_v2: the prompts the agent driver enters by default
     return {"collected": per_class, "human_pool_size": human_pool_size(),
-            "agent_pool_size": sum(bank_counts().values()), "settings": get_settings()}
+            "agent_pool_size": len(reserve) or sum(bank_counts().values()), "settings": get_settings()}
 
 
 # ------------------------------------------------------------------ model accuracy

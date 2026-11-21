@@ -3,6 +3,9 @@
 (?scenario=<id>) under an agent behavior profile, so the server logs prompt + class + per-prompt
 behavior + network for it. Plan (default): every Automated prompt under all 3 profiles, plus every
 Allow/Shadow prompt once (profile rotates), so content and actor are not confounded.
+Which prompts: when the bank has an "agent_reserve" list (bank_v2: 200 prompts set aside for agents,
+same 70/20/10 mix as the pool, not in any participant set), only those, about 240 sessions;
+--all-prompts uses the whole pool instead.
 
   python sim_gateway.py --base https://clemons.us --user study
 """
@@ -70,12 +73,17 @@ def main():
     ap.add_argument("--insecure", action="store_true")
     ap.add_argument("--user", help="site login username (the password is read from the PROMPTGATE_PASSWORD\n                    environment variable, or asked for; it is never put on the command line)")
     ap.add_argument("--seed", type=int, default=20261109)
+    ap.add_argument("--all-prompts", action="store_true", help="enter every pool prompt, not just the bank's agent_reserve")
     a = ap.parse_args(); rng = random.Random(a.seed)
     creds = None
     if a.user:
         pw = os.environ.get("PROMPTGATE_PASSWORD") or getpass.getpass(f"Site password for {a.user}: ")
         creds = {"username": a.user, "password": pw}
-    bank = json.load(open(a.bank))["prompts"]
+    bank_doc = json.load(open(a.bank)); bank = bank_doc["prompts"]
+    reserve = set(bank_doc.get("agent_reserve") or [])
+    if reserve and not a.all_prompts:
+        bank = [p for p in bank if p["id"] in reserve]
+        print(f"agent reserve: {len(bank)} of {len(bank_doc['prompts'])} pool prompts (use --all-prompts for all)")
     jobs = [(pr, p) for p in bank if p["class"] == "Automated AI Pipelines" for pr in PROFILES]
     jobs += [(PROFILES[i % 3], p) for i, p in enumerate(q for q in bank if q["class"] != "Automated AI Pipelines")]
     rng.shuffle(jobs)
