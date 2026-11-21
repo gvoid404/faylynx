@@ -265,7 +265,7 @@ async function loadPool() {
   const s = d.settings;
   $("ad-q-default").value = s.default_quantity; $("ad-q-min").value = s.min_quantity; $("ad-q-max").value = s.max_quantity; $("ad-q-choose").checked = s.participant_can_choose;
   for (const id of ["ad-q-default", "ad-q-min", "ad-q-max"]) $(id).max = d.human_pool_size;
-  $("ad-pool-size").textContent = "The pool people can draw from holds " + d.human_pool_size + " prompts (Allow and Shadow AI). Agents use all " + d.agent_pool_size + ", including the Automated ones.";
+  $("ad-pool-size").textContent = "People can be given up to " + d.human_pool_size + " pool prompts. The agent driver enters " + d.agent_pool_size + " by default.";
   const cv = $("ad-coverage"); cv.replaceChildren();
   cv.append(el("tr", {}, el("th", {}, "Category"), el("th", { class: "ad-num" }, "In the pool"), el("th", {}, "Entered by people"), el("th", {}, "Entered by agents")));
   const cover = (n, total, entries) => n + " of " + total + " prompts (" + entries + (entries === 1 ? " entry)" : " entries)");

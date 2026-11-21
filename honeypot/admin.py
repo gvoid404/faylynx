@@ -189,7 +189,12 @@ def bank_counts():
 
 
 def human_pool_size():
-    c = bank_counts()
+    """How many pool prompts a participant can be given. bank_v1 kept Automated prompts for agents;
+    bank_v2 assigns them to people too (its participant sets include them), so all prompts count."""
+    bank = _read_json(BANK_FILE, {"prompts": []}); c = bank_counts()
+    cls = {p["id"]: p["class"] for p in bank.get("prompts", [])}
+    if any(cls.get(i) == "Automated AI Pipelines" for ids in (bank.get("sets") or {}).values() for i in ids):
+        return sum(c.values())
     return c.get("Allow", 0) + c.get("Shadow AI", 0)
 
 

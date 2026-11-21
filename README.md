@@ -134,11 +134,14 @@ There is no study login on a local copy; that login is added by the web front en
 
 - The participant picks a number on the consent card (when the admin allows it).
 - The admin sets the default, the fewest and the most on **Admin > Prompt quantity**, and can turn
-  the participant's choice off. The shipped settings are default 12, fewest 2, most 40.
+  the participant's choice off. The shipped settings are default 12, fewest 2, most 40; the most can
+  be raised to the whole pool (1,000 with bank_v2).
 
 Participants `P01` to `P20` each have 40 assigned prompts of their own (no prompt is assigned to
 two people): 28 Shadow AI, 8 Allow and 4 Automated, ordered so that every block of 10 is 7/2/1, so
-whatever number a participant picks, they see about the pool's mix. A smaller number stops early.
+whatever number a participant picks, they see about the pool's mix. A smaller number stops early. A
+larger number continues through the rest of the pool (other participants' prompts and the agent
+reserve) in the same 7/2/1 blocks, in an order fixed for that participant.
 Any other link token gets a random draw of Allow and Shadow AI prompts.
 
 Prompts longer than 300 characters that have no separate data part (real prompts that are mostly

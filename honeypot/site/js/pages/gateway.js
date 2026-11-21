@@ -49,7 +49,17 @@ export async function init() {
     const used = new Set(mine.map(p => p.id));
     const order = mine.length ? (list => list.slice().sort((x, y) => hash(TOKEN + x.id) - hash(TOKEN + y.id))) : shuffled;
     const rest = cls => order(bank.prompts.filter(p => p.class === cls && !used.has(p.id)));
-    sequence = mine.concat(interleave(rest("Allow"), rest("Shadow AI")));
+    if (mine.some(p => p.class === "Automated AI Pipelines")) {
+      // bank_v2: after the participant's own prompts, the rest of the pool (other sets, agent reserve) in
+      // blocks of 7 Shadow AI, 2 Allow, 1 Automated, so any number keeps the pool's mix
+      const q = { S: rest("Shadow AI"), A: rest("Allow"), M: rest("Automated AI Pipelines") }, more = [];
+      const BLOCK = ["S", "S", "A", "S", "S", "S", "M", "S", "A", "S"];
+      while (q.S.length || q.A.length || q.M.length)
+        for (const k of BLOCK) { const src = q[k].length ? q[k] : (q.S.length ? q.S : q.A.length ? q.A : q.M); if (src.length) more.push(src.shift()); }
+      sequence = mine.concat(more);
+    } else {
+      sequence = mine.concat(interleave(rest("Allow"), rest("Shadow AI")));
+    }
   }
   const maxQ = Math.max(1, Math.min(cfg.max_quantity, sequence.length));
   const minQ = Math.max(1, Math.min(cfg.min_quantity, maxQ));
@@ -71,9 +81,10 @@ export async function init() {
   // quantity picker (only when the admin allows it, and not for single-prompt agent links)
   if (assignment !== "scenario" && cfg.participant_can_choose && maxQ > minQ) {
     const sel = $("gw-qty"), opts = new Set([minQ, maxQ, quantity]);
-    for (let n = 2; n <= maxQ; n += (n < 20 ? 2 : n < 40 ? 4 : 10)) if (n >= minQ) opts.add(n);
+    for (let n = 2; n <= maxQ; n += (n < 20 ? 2 : n < 40 ? 4 : n < 100 ? 10 : n < 200 ? 20 : n < 500 ? 50 : 100)) if (n >= minQ) opts.add(n);
+    const duration = n => { const m = Math.max(1, Math.round(n * 1.1)); return m < 90 ? "about " + m + " minutes" : "about " + Math.round(m / 60) + " hours"; };
     for (const n of Array.from(opts).sort((x, y) => x - y)) {
-      const o = document.createElement("option"); o.value = n; o.textContent = n + " prompts (about " + Math.max(1, Math.round(n * 1.1)) + " minutes)";
+      const o = document.createElement("option"); o.value = n; o.textContent = n + " prompts (" + duration(n) + ")";
       if (n === quantity) o.selected = true; sel.append(o);
     }
     const note = () => { $("gw-qty-note").textContent = idx > 0 ? "You have already entered " + idx + "." : ""; };
