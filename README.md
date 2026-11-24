@@ -85,6 +85,7 @@ study/
   STUDY_GUIDE.md              step-by-step notes for updating the server and collecting data
   prompt_bank.json            the prompt pool (same file as honeypot/site/prompt_bank.json)
   prompt_bank_v1.json         the previous 160-prompt pool, kept for rollback (not served)
+  pool_v2/                    the tools that built the bank_v2 pool (code only; see its README)
   PromptGate_prompt_sheet.xlsx  participant workbook: links, assigned prompts, progress
   sim_gateway.py              agent driver (run on a laptop)
   refine_models.py            scores the models on collected data and retrains them (run by Admin)

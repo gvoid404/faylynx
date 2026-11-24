@@ -79,7 +79,7 @@ def main():
     if a.user:
         pw = os.environ.get("PROMPTGATE_PASSWORD") or getpass.getpass(f"Site password for {a.user}: ")
         creds = {"username": a.user, "password": pw}
-    bank_doc = json.load(open(a.bank)); bank = bank_doc["prompts"]
+    bank_doc = json.load(open(a.bank, encoding="utf-8")); bank = bank_doc["prompts"]
     reserve = set(bank_doc.get("agent_reserve") or [])
     if reserve and not a.all_prompts:
         bank = [p for p in bank if p["id"] in reserve]

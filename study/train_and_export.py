@@ -76,7 +76,7 @@ def main():
             sys.exit("need --corpus or --p2 to train the content model (or --reuse-content)")
         from sklearn.feature_extraction.text import TfidfVectorizer
         from sklearn.linear_model import LogisticRegression
-        bank = json.load(open(a.bank))
+        bank = json.load(open(a.bank, encoding="utf-8"))
         full = lambda b: b["type_text"] + (("\n\n" + b["paste_text"]) if b.get("paste_text") else "")
         held = set() if a.include_bank else {b["source_id"] for b in bank["prompts"]}
         heldtxt = set() if a.include_bank else {norm(full(b)) for b in bank["prompts"]}

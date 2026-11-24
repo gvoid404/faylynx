@@ -77,7 +77,7 @@ def main():
 
     import numpy as np, pandas as pd
     work = Path(a.work); work.mkdir(parents=True, exist_ok=True)
-    bank = json.load(open(a.bank))
+    bank = json.load(open(a.bank, encoding="utf-8"))
     say("reading collected prompts from", a.captures)
     df = load_rows(a.captures, bank)
     n0 = len(df)
