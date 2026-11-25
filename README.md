@@ -253,9 +253,27 @@ to the server once:
 scp -i YOUR-KEY base_corpus.jsonl.gz ubuntu@YOUR-SERVER:browsing-agent-honeypot/runtime/
 ```
 
-The Admin page says which of the two cases applies before you press the button. The corpus is
-built from the project's labeled data with `study/build_base_corpus.py`. It holds third-party
-dataset text and must stay out of this repository (`.gitignore` blocks it).
+The content model is retrained only when a second private file is there too: the human-confirmed
+real Shadow AI rows (Paper 2's 734 verified training rows, plus 746 invented Shadow AI rows that keep
+the pilot model's recipe), with secrets masked. Without it an update would lose real Shadow AI
+recall, so the update then retrains the behavior model only. Copy it once:
+
+```powershell
+scp -i YOUR-KEY verified_train_masked.jsonl.gz ubuntu@YOUR-SERVER:browsing-agent-honeypot/runtime/
+```
+
+The Admin page says which case applies before you press the button. The corpus is built from the
+project's labeled data with `study/build_base_corpus.py`. Both files hold third-party dataset text
+and must stay out of this repository (`.gitignore` blocks `runtime/`).
+
+**Real Shadow AI check.** Before a new version is activated, the update scores its own recipe on
+the verified real rows it did not train on (5 folds, grouped by near-duplicate cluster). The new
+version is activated only if its recall on real data-handling prompts is no more than 5 points
+below the active version's (or the floor stored in the verified file, minus 5 points, when the
+active version has no check yet), and its false alarms on real look-alike Allow prompts are no
+more than 5 points above. Otherwise it is saved but not activated, and the Admin page says why.
+A content model trained this way is marked `masked`; the gateway then masks secrets in a prompt
+(`honeypot/mask_secrets.py`) before scoring it with that model.
 
 ### Roll back models
 

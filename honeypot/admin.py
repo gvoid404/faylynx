@@ -31,6 +31,8 @@ SETTINGS_FILE = RUNTIME / "settings.json"
 JOBS = RUNTIME / "jobs"
 STATUS_FILE = JOBS / "update_status.json"
 CORPUS = RUNTIME / "base_corpus.jsonl.gz"
+VERIFIED = RUNTIME / "verified_train_masked.jsonl.gz"    # Paper 2 real Shadow AI rows (masked); never in git
+CHECK_TOLERANCE = 0.05                                    # allowed drop in held-out real data-handling recall
 BANK_FILE = HERE / "site" / "prompt_bank.json"
 
 COOKIE = "pg_admin"
@@ -356,6 +358,7 @@ def training_python():
 
 def environment():
     return {"training_ready": training_python() is not None, "corpus_present": CORPUS.is_file(),
+            "verified_present": VERIFIED.is_file(), "verified_path": "runtime/verified_train_masked.jsonl.gz",
             "setup_command": "bash study/server_setup_training.sh",
             "corpus_path": "runtime/base_corpus.jsonl.gz"}
 
@@ -397,17 +400,47 @@ def start_update(activate=True):
     job_id = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
     jobdir = JOBS / job_id; jobdir.mkdir(parents=True, exist_ok=True)
     st = {"state": "running", "job_id": job_id, "started_at": reg.now_iso(), "activate": bool(activate),
-          "content_retrained": CORPUS.is_file(), "log": str(jobdir / "update.log")}
+          "content_retrained": CORPUS.is_file() and VERIFIED.is_file(), "log": str(jobdir / "update.log")}
     _write_status(st)
     threading.Thread(target=_run_update, args=(py, jobdir, st), daemon=True).start()
     return job_id
+
+
+def check_limits():
+    """Limits for the real Shadow AI check: the active version's own held-out result minus a small
+    tolerance, or, for a version without one, the floor stored in the verified file."""
+    meta = {}
+    try:
+        import gzip
+        with gzip.open(VERIFIED, "rt", encoding="utf-8") as f:
+            meta = json.loads(f.readline()).get("_meta", {})
+    except Exception:                                        # noqa: BLE001
+        pass
+    floor, max_fa = meta.get("floor_data_handling_recall"), meta.get("floor_allow_false_alarm")
+    if floor is not None:
+        floor = round(floor - CHECK_TOLERANCE, 4)
+    act = reg.active_id()
+    if act != "baseline":
+        chk = ((_read_json(reg.VERSIONS / act / "meta.json", {}) or {}).get("report") or {}).get("real_shadow_check") or {}
+        dh = (chk.get("data_handling_recall") or {}).get("rate"); fa = (chk.get("allow_false_alarm") or {}).get("rate")
+        if dh is not None:
+            floor = round(dh - CHECK_TOLERANCE, 4)
+        if fa is not None:
+            max_fa = round(fa + CHECK_TOLERANCE, 4)
+    return floor, max_fa
 
 
 def _run_update(py, jobdir, st):
     try:
         cmd = [py, str(REPO / "study" / "refine_models.py"), "--captures", str(CAPTURE_DIR),
                "--out", str(jobdir / "models"), "--report", str(jobdir / "report.json"), "--work", str(jobdir / "work")]
-        cmd += ["--corpus", str(CORPUS)] if CORPUS.is_file() else ["--actor-only"]
+        if st["content_retrained"]:
+            fl, fa = check_limits()
+            cmd += ["--corpus", str(CORPUS), "--verified", str(VERIFIED)]
+            cmd += (["--floor-data-handling", f"{fl:.4f}"] if fl is not None else []) + \
+                   (["--max-allow-false-alarm", f"{fa:.4f}"] if fa is not None else [])
+        else:                       # no corpus or no verified rows: never retrain content without real Shadow AI
+            cmd += ["--actor-only"]
         with open(st["log"], "w", encoding="utf-8") as logf:
             proc = subprocess.Popen(cmd, cwd=str(REPO / "study"), stdout=logf, stderr=subprocess.STDOUT,
                                     env={**os.environ, "PYTHONWARNINGS": "ignore"})
@@ -420,10 +453,16 @@ def _run_update(py, jobdir, st):
         if rc == 0:
             note = "Model update from collected data" + ("" if st["content_retrained"] else " (behavior model only)")
             vid = reg.register(jobdir / "models", {"note": note, "report": report, "content_retrained": st["content_retrained"]})
-            if st["activate"]:
+            chk = report.get("real_shadow_check") or {}
+            blocked = bool(chk) and not chk.get("passed", False)
+            activate = st["activate"] and not blocked
+            if activate:
                 reg.activate(vid, note="model update")
-            st.update(state="done", version_id=vid, activated=bool(st["activate"]), report=report,
-                      message="New version " + vid + (" is now active." if st["activate"] else " was saved but is not active."))
+            msg = "New version " + vid + (" is now active." if activate else " was saved but is not active.")
+            if blocked:
+                msg += " It failed the real Shadow AI check: " + "; ".join(chk.get("reasons") or []) + \
+                       ". The current version stays active."
+            st.update(state="done", version_id=vid, activated=activate, blocked_by_check=blocked, report=report, message=msg)
         elif rc == 3:
             st.update(state="failed", report=report, message=report.get("error") or "Not enough collected data yet.")
         else:

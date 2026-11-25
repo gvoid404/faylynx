@@ -174,8 +174,10 @@ function envNotes(env) {
       el("code", { class: "ad-code" }, "cd ~/browsing-agent-honeypot && " + env.setup_command)));
   } else if (!env.corpus_present) {
     box.append(el("div", { class: "ad-msg" }, "Only the behavior model will be retrained. To retrain the content model too, copy the private training file to the server as " + env.corpus_path + " (see the README)."));
+  } else if (!env.verified_present) {
+    box.append(el("div", { class: "ad-msg" }, "Only the behavior model will be retrained. The content model is retrained only with the real Shadow AI rows, so that an update cannot lose them: copy the private file to the server as " + env.verified_path + " (see the README)."));
   } else {
-    box.append(el("div", { class: "ad-msg ad-ok" }, "Ready: both the content model and the behavior model will be retrained."));
+    box.append(el("div", { class: "ad-msg ad-ok" }, "Ready: both models will be retrained. The new version is activated only if it passes the real Shadow AI check."));
   }
   $("ad-run").disabled = !env.training_ready;
 }
@@ -191,6 +193,15 @@ function reportView(rep) {
   row("People correctly seen as people", pct(c.human_kept_as_human), ra ? pct(ra.human_kept_as_human) : "not estimated");
   row("Agents caught", pct(c.agent_caught), ra ? pct(ra.agent_caught) : "not estimated");
   row("Final 3-way category", pct(c.category_accuracy_3way), rk ? pct(rk.accuracy) : "not estimated");
+  const ck = rep.real_shadow_check;
+  if (ck) {
+    const r = (x) => x && x.n ? x.k + "/" + x.n + " (" + pct(x.rate) + ")" : "n/a";
+    t.append(el("tr", {}, el("th", {}, "Real Shadow AI check (verified rows held out)"), el("th", { class: "ad-num" }, "Limit"), el("th", { class: "ad-num" }, "This update")));
+    row("Real data-handling prompts caught", ck.floor_data_handling != null ? "at least " + pct(ck.floor_data_handling) : "none", r(ck.data_handling_recall));
+    row("Real evasion prompts caught", "", r(ck.evasion_recall));
+    row("Real look-alike Allow prompts flagged", ck.max_allow_false_alarm != null ? "at most " + pct(ck.max_allow_false_alarm) : "none", r(ck.allow_false_alarm));
+    row("Check result", "", ck.passed ? "passed" : "FAILED");
+  }
   box.append(el("p", { class: "ad-muted" }, "Based on " + rep.n_rows + " entries (" + (rep.by_actor.human || 0) + " by people from " + rep.participants + " participants, " + (rep.by_actor.agent || 0) + " by agents)."), el("div", { class: "ad-tablewrap" }, t));
 }
 async function loadUpdate() {

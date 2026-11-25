@@ -58,6 +58,10 @@ def main():
     ap.add_argument("--extra-content", nargs="*", default=[], help="jsonl with prompt,label (e.g. live captures)")
     ap.add_argument("--extra-actor", nargs="*", default=[], help="csv with the 7 behavior features + label (human/agent)")
     ap.add_argument("--include-bank", action="store_true", help="do not hold the prompt bank out (final refined model)")
+    ap.add_argument("--verified", help="private masked file of the Paper 2 verified training rows (real Shadow AI); always "
+                    "included in content training when given")
+    ap.add_argument("--mask", action="store_true", help="mask secrets in every training text; the model is marked masked "
+                    "and the gateway then masks prompts before scoring them")
     ap.add_argument("--reuse-content", help="copy this content_model.json instead of retraining the content model")
     ap.add_argument("--out", default="models"); ap.add_argument("--tag", default="v3")
     a = ap.parse_args()
@@ -89,13 +93,29 @@ def main():
                 t = (d.get("prompt") or "").strip()
                 if d.get("label") in KEEP and len(t) >= 15:
                     rows[t[:4000]] = d["label"]
+        n_verified = 0
+        if a.verified:
+            for d in read_jsonl(a.verified):
+                t = (d.get("prompt") or "").strip()
+                if d.get("label") in KEEP and len(t) >= 15:
+                    rows[t[:4000]] = d["label"]; n_verified += 1
+            say(f"content: added {n_verified} rows (verified real + invented) from {a.verified}")
+        if a.mask:
+            sys.path.insert(0, str(HERE.parent / "honeypot"))
+            from mask_secrets import mask_text, MASK_VERSION
+            masked = {}
+            for t, lab in rows.items():
+                masked[mask_text(t)] = lab
+            rows = masked
+            say(f"content: secrets masked in all training text ({MASK_VERSION})")
         texts = list(rows); labels = list(rows.values())
         say(f"content: training on {len(texts)} prompts {dict(Counter(labels))}")
         vec = TfidfVectorizer(sublinear_tf=True, ngram_range=(1, 2), min_df=2, max_features=30000)
         X = vec.fit_transform(texts); clf = LogisticRegression(max_iter=3000, class_weight="balanced", C=4.0)
         cv = cross_val_score(clf, X, labels, cv=StratifiedKFold(5, shuffle=True, random_state=7), scoring="f1_macro").mean()
         clf.fit(X, labels)
-        bp = clf.predict(vec.transform([full(b) for b in bank["prompts"]])); by = {}
+        prep = (lambda t: mask_text(t)) if a.mask else (lambda t: t)
+        bp = clf.predict(vec.transform([prep(full(b)) for b in bank["prompts"]])); by = {}
         for b, p in zip(bank["prompts"], bp):
             by.setdefault(b["class"], []).append(p == b["class"])
         bank_acc = {k: round(float(np.mean(v)), 3) for k, v in by.items()}
@@ -105,7 +125,8 @@ def main():
               "terms": {str(t): [round(float(idf[i]), 4)] + [round(float(c), 4) for c in coef[:, i]] for i, t in enumerate(terms)},
               "n_train": len(texts), "train_counts": dict(Counter(labels)), "cv5_macro_f1": round(float(cv), 4),
               "bank_held_out": not a.include_bank, "bank_acc": bank_acc,
-              "bank_version": bank.get("version"), "bank_sizes": dict(Counter(b["class"] for b in bank["prompts"]))}
+              "bank_version": bank.get("version"), "bank_sizes": dict(Counter(b["class"] for b in bank["prompts"])),
+              "masked": bool(a.mask), "n_verified": n_verified}
         json.dump(cj, open(out / "content_model.json", "w"))
         say(f"content: cv macro-F1 {cv:.3f} | accuracy on the prompt bank ({'held out' if not a.include_bank else 'included in training'}) {bank_acc}")
 

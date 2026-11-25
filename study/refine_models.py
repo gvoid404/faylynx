@@ -15,7 +15,13 @@ Steps
   3. retrain on everything and write <out>/content_model.json + <out>/actor_model.json
 
 The Admin page runs this on the server (Admin > Model updates). By hand:
-  python refine_models.py --captures ../captures --corpus ../runtime/base_corpus.jsonl.gz --out new_models
+  python refine_models.py --captures ../captures --corpus ../runtime/base_corpus.jsonl.gz \
+      --verified ../runtime/verified_train_masked.jsonl.gz --out new_models
+The verified file (Paper 2's 734 human-confirmed training rows, secrets masked) is required to retrain
+the content model, so an update never drops real Shadow AI. The new content model is trained on masked
+text and the gateway masks prompts before scoring them with it. Step 2b scores the update's recipe on
+verified rows held out by near-duplicate group; the Admin page activates the new version only if that
+real Shadow AI check passes.
 Without a training corpus use --actor-only: the behavior model is retrained and the content model
 is carried over unchanged.
 Exit code 3 means there is not enough collected data yet.
@@ -59,6 +65,22 @@ def prf(pred, truth):
     return {"precision": round(p, 3), "recall": round(r, 3), "f1": round(2 * p * r / (p + r), 3) if p + r else 0.0}
 
 
+def base_rows(a, bank, verified, mask_text):
+    """Base corpus (+ verified rows), masked, with prompt-bank items left out: (texts, labels)."""
+    sys.path.insert(0, str(HERE))
+    from train_and_export import corpus_rows, norm
+    held = {p["source_id"] for p in bank["prompts"]}
+    heldtxt = {norm(p["type_text"] + (("\n\n" + p["paste_text"]) if p.get("paste_text") else "")) for p in bank["prompts"]}
+    base = {}
+    for i, t, lab in corpus_rows(a.corpus, a.p2):
+        if lab in CLASSES and len(t) >= 15 and i not in held and norm(t) not in heldtxt:
+            base[t[:4000]] = lab
+    for d in verified:
+        base[d["prompt"][:4000]] = d["label"]
+    base = {mask_text(t): l for t, l in base.items()}           # the update trains on masked text
+    return list(base), list(base.values())
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--captures", required=True)
@@ -69,11 +91,27 @@ def main():
     ap.add_argument("--out", default="models_refined")
     ap.add_argument("--report", default="refine_report.json")
     ap.add_argument("--work", default="refine_tmp")
+    ap.add_argument("--verified", help="private masked file of the Paper 2 verified training rows (real Shadow AI). "
+                    "Always included in content training, and used for the real Shadow AI check before activation")
+    ap.add_argument("--floor-data-handling", type=float, default=None,
+                    help="lowest acceptable held-out recall on real data-handling Shadow AI (the check fails below it)")
+    ap.add_argument("--max-allow-false-alarm", type=float, default=None,
+                    help="highest acceptable held-out false-alarm rate on real look-alike Allow prompts")
     ap.add_argument("--min-rows", type=int, default=20, help="fewest usable prompt entries needed to refine")
     ap.add_argument("--min-text-match", type=float, default=0.6, help="drop rows whose text is far from the assigned prompt")
     a = ap.parse_args()
     if not a.actor_only and not a.corpus and not a.p2:
         sys.exit("give --corpus or --p2 to retrain the content model, or use --actor-only")
+    if not a.actor_only and not a.verified:
+        sys.exit("retraining the content model needs --verified (the real Shadow AI rows); without them the update "
+                 "loses real Shadow AI recall. Use --actor-only to update only the behavior model.")
+    sys.path.insert(0, str(HERE.parent / "honeypot"))
+    from mask_secrets import mask_text
+    verified = []
+    if a.verified:
+        from train_and_export import read_jsonl
+        verified = [d for d in read_jsonl(a.verified) if d.get("label") in CLASSES and (d.get("prompt") or "").strip()]
+        say(f"verified real rows: {len(verified)}")
 
     import numpy as np, pandas as pd
     work = Path(a.work); work.mkdir(parents=True, exist_ok=True)
@@ -119,6 +157,7 @@ def main():
     say(f"  current models: content accuracy {cm['content_accuracy']}, actor accuracy {cm['actor_accuracy']}, "
         f"3-way category accuracy {cm['category_accuracy_3way']}")
 
+    bt, bl = base_rows(a, bank, verified, mask_text) if not a.actor_only else ([], [])
     # 2. honest estimates for the refined models
     say("step 2/3: estimating the refined models with participants and prompts held out")
     from sklearn.model_selection import GroupKFold
@@ -147,21 +186,12 @@ def main():
     if not a.actor_only and uniq.prompt_id.nunique() >= 10:
         from sklearn.feature_extraction.text import TfidfVectorizer
         from sklearn.linear_model import LogisticRegression
-        sys.path.insert(0, str(HERE))
-        from train_and_export import corpus_rows, norm
-        held = {p["source_id"] for p in bank["prompts"]}
-        heldtxt = {norm(p["type_text"] + (("\n\n" + p["paste_text"]) if p.get("paste_text") else "")) for p in bank["prompts"]}
-        base = {}
-        for i, t, lab in corpus_rows(a.corpus, a.p2):
-            if lab in CLASSES and len(t) >= 15 and i not in held and norm(t) not in heldtxt:
-                base[t[:4000]] = lab
-        bt = list(base); bl = list(base.values())
         ok = np.zeros(len(uniq), bool); pred_u = np.empty(len(uniq), dtype=object)
         for k, (tr, te) in enumerate(GroupKFold(5).split(uniq, uniq.true_content, uniq.prompt_id), 1):
             vec = TfidfVectorizer(sublinear_tf=True, ngram_range=(1, 2), min_df=2, max_features=30000)
-            X = vec.fit_transform(bt + list(uniq.prompt.iloc[tr])); w = np.concatenate([np.ones(len(bt)), np.full(len(tr), 5.0)])
+            X = vec.fit_transform(bt + [mask_text(t) for t in uniq.prompt.iloc[tr]]); w = np.concatenate([np.ones(len(bt)), np.full(len(tr), 5.0)])
             clf = LogisticRegression(max_iter=3000, class_weight="balanced", C=4.0).fit(X, bl + list(uniq.true_content.iloc[tr]), sample_weight=w)
-            pred_u[te] = clf.predict(vec.transform(uniq.prompt.iloc[te]))
+            pred_u[te] = clf.predict(vec.transform([mask_text(t) for t in uniq.prompt.iloc[te]]))
             ok[te] = pred_u[te] == uniq.true_content.iloc[te].values
             say(f"  content fold {k}/5 done")
         content_oof = df.prompt_id.map(dict(zip(uniq.prompt_id, pred_u))).values
@@ -184,6 +214,45 @@ def main():
     else:
         rep["refined_category_heldout"] = None
 
+    # 2b. real Shadow AI check: the update's recipe, scored on verified rows it did not train on
+    #     (5 folds grouped by near-duplicate cluster). The Admin page activates the new version only if it passes.
+    rep["real_shadow_check"] = None
+    if not a.actor_only and verified:
+        say("step 2b: real Shadow AI check (verified rows held out by near-duplicate group)")
+        from sklearn.model_selection import StratifiedGroupKFold
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.linear_model import LogisticRegression
+        real = [d for d in verified if d.get("kind") != "invented"]     # invented rows only ever train
+        vtxt = [mask_text(d["prompt"][:4000]) for d in real]; vlab = [d["label"] for d in real]
+        vkind = np.array([d.get("kind") or d["label"] for d in real]); vgrp = [d.get("group") or str(i) for i, d in enumerate(real)]
+        vset = set(vtxt)
+        other = {t: l for t, l in zip(bt, bl) if t not in vset}           # base corpus without the verified rows
+        for t, l in zip(df.prompt, df.true_content):
+            other[mask_text(t[:4000])] = l
+        ot, ol = list(other), list(other.values())
+        pred_v = np.empty(len(real), dtype=object)
+        for k, (tr, te) in enumerate(StratifiedGroupKFold(5, shuffle=True, random_state=20261120).split(vtxt, vkind, vgrp), 1):
+            vec = TfidfVectorizer(sublinear_tf=True, ngram_range=(1, 2), min_df=2, max_features=30000)
+            X = vec.fit_transform(ot + [vtxt[i] for i in tr])
+            clf = LogisticRegression(max_iter=3000, class_weight="balanced", C=4.0).fit(X, ol + [vlab[i] for i in tr])
+            pred_v[te] = clf.predict(vec.transform([vtxt[i] for i in te]))
+            say(f"  check fold {k}/5 done")
+        def rate(mask_, want_shadow=True):
+            n = int(mask_.sum()); k = int(((pred_v[mask_] == "Shadow AI") == want_shadow).sum())
+            return {"k": k, "n": n, "rate": round(k / n, 4) if n else None}
+        chk = {"data_handling_recall": rate(vkind == "data_handling"), "evasion_recall": rate(vkind == "evasion"),
+               "allow_false_alarm": rate(vkind == "Allow")}
+        dh = chk["data_handling_recall"]["rate"]; fa = chk["allow_false_alarm"]["rate"]
+        reasons = []
+        if a.floor_data_handling is not None and dh is not None and dh < a.floor_data_handling:
+            reasons.append(f"real data-handling recall {dh:.3f} is below the floor {a.floor_data_handling:.3f}")
+        if a.max_allow_false_alarm is not None and fa is not None and fa > a.max_allow_false_alarm:
+            reasons.append(f"false alarms on real look-alike Allow prompts {fa:.3f} exceed {a.max_allow_false_alarm:.3f}")
+        chk.update(passed=not reasons, reasons=reasons, floor_data_handling=a.floor_data_handling,
+                   max_allow_false_alarm=a.max_allow_false_alarm)
+        rep["real_shadow_check"] = chk
+        say("  real Shadow AI check:", json.dumps(chk))
+
     # 3. final refit on everything + export
     say("step 3/3: retraining on all data and exporting the new model files")
     extra_c = work / "live_content.jsonl"
@@ -198,7 +267,7 @@ def main():
     if a.actor_only:
         cmd += ["--reuse-content", str(inf.registry.active_dir() / "content_model.json")]
     else:
-        cmd += ["--extra-content", str(extra_c), "--include-bank"] + (["--corpus", a.corpus] if a.corpus else ["--p2", a.p2])
+        cmd += ["--extra-content", str(extra_c), "--include-bank", "--verified", a.verified, "--mask"] + (["--corpus", a.corpus] if a.corpus else ["--p2", a.p2])
     subprocess.run(cmd, check=True)
     rep["tag"] = tag
     json.dump(rep, open(a.report, "w"), indent=1)

@@ -8,6 +8,7 @@ from pathlib import Path
 import behavioral_features as bf
 
 import model_registry as registry
+from mask_secrets import mask_text
 
 HERE = Path(__file__).resolve().parent
 TOKEN_RE = re.compile(r"(?u)\b\w\w+\b")
@@ -30,6 +31,8 @@ def _load(name, folder=None):
 
 def classify_content(text, folder=None):
     m = _load("content_model.json", folder)
+    if m.get("masked"):                     # a model trained on masked text scores masked text
+        text = mask_text(text)
     toks = TOKEN_RE.findall(text.lower())
     grams = toks + [a + " " + b for a, b in zip(toks, toks[1:])]
     tf = {}
