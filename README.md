@@ -272,6 +272,12 @@ version is activated only if its recall on real data-handling prompts is no more
 below the active version's (or the floor stored in the verified file, minus 5 points, when the
 active version has no check yet), and its false alarms on real look-alike Allow prompts are no
 more than 5 points above. Otherwise it is saved but not activated, and the Admin page says why.
+**Behavior check.** The behavior model is replaced only if, with participants held out, the new one sees
+people's entries as human, and catches agents, within 5 points of the current behavior model on the same
+entries. Otherwise the update keeps the current behavior model and replaces only the content model. With few
+real participants a new behavior model mostly learns the agents, so expect it to be kept until more people
+have taken part.
+
 A content model trained this way is marked `masked`; the gateway then masks secrets in a prompt
 (`honeypot/mask_secrets.py`) before scoring it with that model.
 

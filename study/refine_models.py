@@ -24,6 +24,8 @@ verified rows held out by near-duplicate group; the Admin page activates the new
 real Shadow AI check passes.
 Without a training corpus use --actor-only: the behavior model is retrained and the content model
 is carried over unchanged.
+Step 2c keeps the current behavior model unless the refined one, with participants held out, sees people as
+people (and catches agents) about as well as the current one does.
 Exit code 3 means there is not enough collected data yet.
 """
 import argparse, json, shutil, subprocess, sys, time
@@ -97,6 +99,9 @@ def main():
                     help="lowest acceptable held-out recall on real data-handling Shadow AI (the check fails below it)")
     ap.add_argument("--max-allow-false-alarm", type=float, default=None,
                     help="highest acceptable held-out false-alarm rate on real look-alike Allow prompts")
+    ap.add_argument("--max-people-drop", type=float, default=0.05,
+                    help="keep the current behavior model if the refined one, with participants held out, sees this much "
+                         "less of people's entries as human than the current model does (or catches this much fewer agents)")
     ap.add_argument("--min-rows", type=int, default=20, help="fewest usable prompt entries needed to refine")
     ap.add_argument("--min-text-match", type=float, default=0.6, help="drop rows whose text is far from the assigned prompt")
     a = ap.parse_args()
@@ -253,6 +258,23 @@ def main():
         rep["real_shadow_check"] = chk
         say("  real Shadow AI check:", json.dumps(chk))
 
+    # 2c. behavior check: replace the behavior model only if, with participants held out, it does not see
+    #     fewer people as people (or catch fewer agents) than the current model. Otherwise keep the current one.
+    ra = rep.get("refined_actor_leave_participants_out"); cm = rep["current_models"]
+    reasons = []
+    if ra is None:
+        reasons.append("no held-out estimate for a new behavior model (needs people and agents from at least 5 groups)")
+    else:
+        if cm.get("human_kept_as_human") is not None and ra["human_kept_as_human"] < cm["human_kept_as_human"] - a.max_people_drop:
+            reasons.append(f"people seen as people {ra['human_kept_as_human']:.3f} with participants held out, "
+                           f"against {cm['human_kept_as_human']:.3f} for the current behavior model")
+        if cm.get("agent_caught") is not None and ra["agent_caught"] < cm["agent_caught"] - a.max_people_drop:
+            reasons.append(f"agents caught {ra['agent_caught']:.3f} with participants held out, against {cm['agent_caught']:.3f}")
+    keep_actor = bool(reasons)
+    rep["actor_check"] = {"replaced": not keep_actor, "kept_current": keep_actor, "reasons": reasons,
+                          "max_drop": a.max_people_drop}
+    say("  behavior check:", json.dumps(rep["actor_check"]))
+
     # 3. final refit on everything + export
     say("step 3/3: retraining on all data and exporting the new model files")
     extra_c = work / "live_content.jsonl"
@@ -264,6 +286,8 @@ def main():
     tag = "live-" + time.strftime("%Y%m%d", time.gmtime())
     cmd = [sys.executable, str(HERE / "train_and_export.py"), "--bank", a.bank, "--extra-actor", str(extra_a),
            "--out", a.out, "--tag", tag]
+    if keep_actor:
+        cmd += ["--reuse-actor", str(inf.registry.active_dir() / "actor_model.json")]
     if a.actor_only:
         cmd += ["--reuse-content", str(inf.registry.active_dir() / "content_model.json")]
     else:

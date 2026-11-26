@@ -63,6 +63,7 @@ def main():
     ap.add_argument("--mask", action="store_true", help="mask secrets in every training text; the model is marked masked "
                     "and the gateway then masks prompts before scoring them")
     ap.add_argument("--reuse-content", help="copy this content_model.json instead of retraining the content model")
+    ap.add_argument("--reuse-actor", help="copy this actor_model.json instead of retraining the behavior model")
     ap.add_argument("--out", default="models"); ap.add_argument("--tag", default="v3")
     a = ap.parse_args()
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
@@ -131,6 +132,11 @@ def main():
         say(f"content: cv macro-F1 {cv:.3f} | accuracy on the prompt bank ({'held out' if not a.include_bank else 'included in training'}) {bank_acc}")
 
     # ---------------- actor ----------------
+    if a.reuse_actor:
+        shutil.copyfile(a.reuse_actor, out / "actor_model.json")
+        say(f"actor: reused {a.reuse_actor} (not retrained)")
+        say(f"wrote {out}/content_model.json and {out}/actor_model.json (tag {a.tag})")
+        return
     import xgboost as xgb
     fr = []
     for p in list(a.actor_csv) + list(a.extra_actor):

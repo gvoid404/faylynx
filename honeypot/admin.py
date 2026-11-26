@@ -462,6 +462,9 @@ def _run_update(py, jobdir, st):
             if blocked:
                 msg += " It failed the real Shadow AI check: " + "; ".join(chk.get("reasons") or []) + \
                        ". The current version stays active."
+            ac = report.get("actor_check") or {}
+            if ac.get("kept_current"):
+                msg += " The behavior model was kept from the previous version: " + "; ".join(ac.get("reasons") or []) + "."
             st.update(state="done", version_id=vid, activated=activate, blocked_by_check=blocked, report=report, message=msg)
         elif rc == 3:
             st.update(state="failed", report=report, message=report.get("error") or "Not enough collected data yet.")

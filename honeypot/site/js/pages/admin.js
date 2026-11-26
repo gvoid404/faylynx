@@ -202,6 +202,10 @@ function reportView(rep) {
     row("Real look-alike Allow prompts flagged", ck.max_allow_false_alarm != null ? "at most " + pct(ck.max_allow_false_alarm) : "none", r(ck.allow_false_alarm));
     row("Check result", "", ck.passed ? "passed" : "FAILED");
   }
+  const ac = rep.actor_check;
+  if (ac) {
+    row("Behavior model", "", ac.kept_current ? "kept from the previous version" : "replaced (passed the people check)");
+  }
   box.append(el("p", { class: "ad-muted" }, "Based on " + rep.n_rows + " entries (" + (rep.by_actor.human || 0) + " by people from " + rep.participants + " participants, " + (rep.by_actor.agent || 0) + " by agents)."), el("div", { class: "ad-tablewrap" }, t));
 }
 async function loadUpdate() {
